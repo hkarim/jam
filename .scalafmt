@@ -1,0 +1,12 @@
+style = defaultWithAlign
+maxColumn = 140
+danglingParentheses = false
+rewrite.rules=[
+  RedundantBraces,
+  RedundantParens,
+  PreferCurlyFors,
+  SortImports
+]
+unindentTopLevelOperators = true
+indentOperator            = spray
+
