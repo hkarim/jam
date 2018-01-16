@@ -5,6 +5,7 @@ import cats.syntax.monoid._
 
 trait Backend[DBF[_], R[_], W[_]]
     extends BackendAst[DBF, R, W]
+    with IsoInstances[DBF, R, W]
     with WriteTC[DBF, R, W]
     with ReadTC[DBF, R, W]
     with LiteralTC[DBF, R, W]

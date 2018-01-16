@@ -1,7 +1,6 @@
 package jam.sql
 
 import cats.{Functor, Invariant}
-import jam.data.Iso
 import shapeless._
 
 trait ReadTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
@@ -20,8 +19,6 @@ trait ReadTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
       def read: R[A] = ev
     }
 
-    implicit def isoL[LHS, RHS](implicit ev: Iso[LHS, RHS], r: Lazy[BackendRead[RHS]], F: Functor[R]): BackendRead[LHS] =
-      BackendRead[RHS](r.value).map(ev.isoFrom)
   }
 
   object BackendRead extends ProductTypeClassCompanion[BackendRead] with ReadLowPriorityInstances {

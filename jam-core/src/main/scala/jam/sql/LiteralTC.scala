@@ -1,6 +1,5 @@
 package jam.sql
 
-import jam.data.Iso
 import shapeless._
 
 trait LiteralTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
@@ -23,9 +22,6 @@ trait LiteralTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
 
     implicit val string: BackendLiteral[String]         = (a: String) => Vector(const(s"'$a'"))
     implicit def numeric[N: Numeric]: BackendLiteral[N] = (a: N) => Vector(const(s"$a"))
-
-    implicit def isoL[LHS, RHS](implicit ev: Iso[LHS, RHS], l: Lazy[BackendLiteral[RHS]]): BackendLiteral[LHS] =
-      BackendLiteral[RHS](l.value).contramap[LHS](ev.isoTo)
 
   }
 

@@ -1,7 +1,6 @@
 package jam.sql
 
 import cats.Contravariant
-import jam.data.Iso
 import shapeless._
 
 trait WriteTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
@@ -23,9 +22,6 @@ trait WriteTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
       def write: W[A]                 = ev
       def fr(instance: A): Vector[Fr] = self.fragment(instance)
     }
-
-    implicit def isoL[LHS, RHS](implicit ev: Iso[LHS, RHS], w: Lazy[BackendWrite[RHS]], F: Contravariant[W]): BackendWrite[LHS] =
-      BackendWrite[RHS](w.value).contramap[LHS](ev.isoTo)
 
   }
   object BackendWrite extends ProductTypeClassCompanion[BackendWrite] with WriteLowPriorityInstances {
