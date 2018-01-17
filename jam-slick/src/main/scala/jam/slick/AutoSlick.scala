@@ -36,49 +36,49 @@ trait AutoSlick { self: Slick =>
       }
   }
 
-  object WriteTypeClass extends ProductTypeClass[BackendWrite] {
+  object WriteTypeClass extends ProductTypeClass[Write] {
 
-    def emptyProduct: BackendWrite[HNil] = new BackendWrite[HNil] {
+    def emptyProduct: Write[HNil] = new Write[HNil] {
       implicit def write: SetParameter[HNil]   = SetParameter[HNil]((_, _) => ())
       def fr(instance: HNil): Vector[Fragment] = Vector.empty[Fragment]
     }
 
-    def product[H, T <: HList](ch: BackendWrite[H], ct: BackendWrite[T]): BackendWrite[H :: T] = new BackendWrite[H :: T] {
+    def product[H, T <: HList](ch: Write[H], ct: Write[T]): Write[H :: T] = new Write[H :: T] {
       implicit def write: SetParameter[H :: T] = SetParameterTypeClass.product[H, T](ch.write, ct.write)
       def fr(instance: H :: T): Vector[Fragment] = instance match {
         case h :: t => ch.fr(h) ++ ct.fr(t)
       }
     }
 
-    def project[F, G](bind: => BackendWrite[G], to: F => G, from: G => F): BackendWrite[F] = new BackendWrite[F] {
+    def project[F, G](bind: => Write[G], to: F => G, from: G => F): Write[F] = new Write[F] {
       implicit def write: SetParameter[F]   = SetParameterTypeClass.project(bind.write, to, from)
       def fr(instance: F): Vector[Fragment] = bind.fr(to(instance))
     }
   }
 
-  object ReadTypeClass extends ProductTypeClass[BackendRead] {
-    def emptyProduct: BackendRead[HNil] = new BackendRead[HNil] {
+  object ReadTypeClass extends ProductTypeClass[Read] {
+    def emptyProduct: Read[HNil] = new Read[HNil] {
       implicit def read: GetResult[HNil] = GetResult[HNil](_ => HNil)
     }
 
-    def product[H, T <: HList](ch: BackendRead[H], ct: BackendRead[T]): BackendRead[H :: T] = new BackendRead[H :: T] {
+    def product[H, T <: HList](ch: Read[H], ct: Read[T]): Read[H :: T] = new Read[H :: T] {
       implicit def read: GetResult[H :: T] = GetResultTypeClass.product[H, T](ch.read, ct.read)
     }
 
-    def project[F, G](unbind: => BackendRead[G], to: F => G, from: G => F): BackendRead[F] = new BackendRead[F] {
+    def project[F, G](unbind: => Read[G], to: F => G, from: G => F): Read[F] = new Read[F] {
       implicit def read: GetResult[F] = GetResultTypeClass.project(unbind.read, to, from)
     }
   }
 
-  object LiteralTypeClass extends ProductTypeClass[BackendLiteral] {
+  object LiteralTypeClass extends ProductTypeClass[Literal] {
 
-    def emptyProduct: BackendLiteral[HNil] = (_: HNil) => Vector.empty[Fragment]
+    def emptyProduct: Literal[HNil] = (_: HNil) => Vector.empty[Fragment]
 
-    def product[H, T <: HList](ch: BackendLiteral[H], ct: BackendLiteral[T]): BackendLiteral[H :: T] = {
+    def product[H, T <: HList](ch: Literal[H], ct: Literal[T]): Literal[H :: T] = {
       case h :: t => ch.fragment(h) ++ ct.fragment(t)
     }
 
-    def project[F, G](bind: => BackendLiteral[G], to: F => G, from: G => F): BackendLiteral[F] =
+    def project[F, G](bind: => Literal[G], to: F => G, from: G => F): Literal[F] =
       (instance: F) => bind.fragment(to(instance))
   }
 

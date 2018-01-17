@@ -33,9 +33,9 @@ object Model {
 
   def findCountry[F[_]: Jam : Functor](name: String)
                                       (implicit
-                                       ws: Write[String],
-                                       ll: Literal[Long],
-                                       r: Read[F, Country]): F[Option[Country]] =
+                                       ws: Encode[String],
+                                       ll: Constant[Long],
+                                       r: Decode[F, Country]): F[Option[Country]] =
     DQL
       .from(c)
       .where(c.name === name.param and (c.population - 100L.literal) > 200L.literal)

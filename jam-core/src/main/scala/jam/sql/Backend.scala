@@ -13,16 +13,16 @@ trait Backend[DBF[_], R[_], W[_]]
 
   type Fr
 
-  def query[A: BackendRead](n: Expression[A])(implicit ns: NamingStrategy): DBF[Vector[A]]
+  def query[A: Read](n: Expression[A])(implicit ns: NamingStrategy): DBF[Vector[A]]
   def update[A](n: DMLNode[A])(implicit ns: NamingStrategy): DBF[Int]
 
   def const(value: String): Fr
   def comma: Fr = const(",")
 
-  implicit def read[A: BackendRead](implicit ns: NamingStrategy): Read[DBF, A] = (n: DQLNode[A]) => query(n)
+  implicit def read[A: Read](implicit ns: NamingStrategy): Decode[DBF, A] = (n: DQLNode[A]) => query(n)
 
   implicit def backendEffect: Jam[DBF] = new Jam[DBF] {
-    def query[A](n: DQLNode[A])(implicit r: Read[DBF, A], ns: NamingStrategy): DBF[Vector[A]] = r(n)
+    def query[A](n: DQLNode[A])(implicit r: Decode[DBF, A], ns: NamingStrategy): DBF[Vector[A]] = r(n)
     def update[A](n: DMLNode[A])(implicit ns: NamingStrategy): DBF[Int]                       = update(n)
   }
 

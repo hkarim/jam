@@ -12,13 +12,13 @@ trait Slick extends Backend[DBIO, GetResult, SetParameter] with AutoSlick with S
 
   type Fr = Fragment
 
-  def writeTypeClass: ProductTypeClass[BackendWrite]     = WriteTypeClass
-  def readTypeClass: ProductTypeClass[BackendRead]       = ReadTypeClass
-  def literalTypeClass: ProductTypeClass[BackendLiteral] = LiteralTypeClass
+  def writeTypeClass: ProductTypeClass[Write]     = WriteTypeClass
+  def readTypeClass: ProductTypeClass[Read]       = ReadTypeClass
+  def literalTypeClass: ProductTypeClass[Literal] = LiteralTypeClass
   def fragment[A: SetParameter](value: A): Vector[Fr]    = Vector(sql"$value")
 
-  implicit object readInvariant extends Invariant[BackendRead] {
-    def imap[A, B](fa: BackendRead[A])(f: A => B)(g: B => A): BackendRead[B] = new BackendRead[B] {
+  implicit object readInvariant extends Invariant[Read] {
+    def imap[A, B](fa: Read[A])(f: A => B)(g: B => A): Read[B] = new Read[B] {
       def read: GetResult[B] = GetResult[B](r => f(r.<<[A](fa.read)))
     }
   }
@@ -53,7 +53,7 @@ trait Slick extends Backend[DBIO, GetResult, SetParameter] with AutoSlick with S
 
   def const(value: String): Fr = sql"#$value"
 
-  def query[A: BackendRead](n: Expression[A])(implicit ns: NamingStrategy): DBIO[Vector[A]] = run(n).as[A](BackendRead[A].read)
+  def query[A: Read](n: Expression[A])(implicit ns: NamingStrategy): DBIO[Vector[A]] = run(n).as[A](Read[A].read)
   def update[A](n: DMLNode[A])(implicit ns: NamingStrategy): DBIO[Int]                      = run(n).asUpdate
 
 }

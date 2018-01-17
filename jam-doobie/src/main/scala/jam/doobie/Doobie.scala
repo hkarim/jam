@@ -8,12 +8,12 @@ import shapeless.ProductTypeClass
 trait Doobie extends Backend[ConnectionIO, Composite, Param] with AutoDoobie with DoobieSyntax {
   type Fr = Fragment
 
-  def readTypeClass: ProductTypeClass[BackendRead]       = ReadTypeClass
-  def writeTypeClass: ProductTypeClass[BackendWrite]     = WriteTypeClass
-  def literalTypeClass: ProductTypeClass[BackendLiteral] = LiteralTypeClass
+  def readTypeClass: ProductTypeClass[Read]       = ReadTypeClass
+  def writeTypeClass: ProductTypeClass[Write]     = WriteTypeClass
+  def literalTypeClass: ProductTypeClass[Literal] = LiteralTypeClass
 
-  def query[A: BackendRead](n: Expression[A])(implicit ns: NamingStrategy): ConnectionIO[Vector[A]] =
-    run(n).query[A](BackendRead[A].read).to[Vector]
+  def query[A: Read](n: Expression[A])(implicit ns: NamingStrategy): ConnectionIO[Vector[A]] =
+    run(n).query[A](Read[A].read).to[Vector]
 
   def update[A](n: DMLNode[A])(implicit ns: NamingStrategy): ConnectionIO[Int] =
     run(n).update.run
