@@ -11,7 +11,7 @@ import scala.util.{Failure, Success}
 
 object Model {
 
-  import jam.sql._ // for entity
+  import jam.sql._        // for entity
   import jam.sql.syntax._ // for sql dsl
   import cats.Functor // to map on query results
   import cats.implicits._ // for functor instance
@@ -19,9 +19,9 @@ object Model {
   case class Country(code: String, name: String, population: Long)
 
   object CountryEntity extends Entity[Country] {
-    val entityName: String = "country"
-    val code: Property[String] = property("code")
-    val name: Property[String] = property("name")
+    val entityName: String         = "country"
+    val code: Property[String]     = property("code")
+    val name: Property[String]     = property("name")
     val population: Property[Long] = property("population")
     val properties: Properties[Country] =
       (code :: name :: population :: HNil).properties[Country]
@@ -31,10 +31,8 @@ object Model {
 
   implicit val ns: NamingStrategy = NamingStrategy.Postgres // or MySQL
 
-  def findCountry[F[_]: Jam: Functor](name: String)(
-      implicit ws: Encode[String],
-      ll: Constant[Long],
-      r: Decode[F, Country]): F[Option[Country]] =
+  def findCountry[F[_]: Jam: Functor](
+      name: String)(implicit ws: Encode[String], ll: Constant[Long], r: Decode[F, Country]): F[Option[Country]] =
     DQL
       .from(c)
       .where(
@@ -133,8 +131,7 @@ object Main {
 
     DML
       .update(c)
-      .set(c.name := DQL.select("some name".literal).enclose,
-           c.population := c.population - 1L.literal)
+      .set(c.name := DQL.select("some name".literal).enclose, c.population := c.population - 1L.literal)
       .where((c.code :: c.name) in ("a".literal :: "b".param))
       .update
       .transactionally

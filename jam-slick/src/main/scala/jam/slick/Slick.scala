@@ -8,16 +8,13 @@ import _root_.slick.jdbc.{GetResult, SetParameter}
 
 import scala.concurrent.ExecutionContext
 
-trait Slick
-    extends Backend[DBIO, GetResult, SetParameter]
-    with AutoSlick
-    with SlickSyntax { self =>
+trait Slick extends Backend[DBIO, GetResult, SetParameter] with AutoSlick with SlickSyntax { self =>
 
   type Fr = Fragment
 
-  def writeTypeClass: ProductTypeClass[Write] = WriteTypeClass
-  def readTypeClass: ProductTypeClass[Read] = ReadTypeClass
-  def literalTypeClass: ProductTypeClass[Literal] = LiteralTypeClass
+  def writeTypeClass: ProductTypeClass[Write]         = WriteTypeClass
+  def readTypeClass: ProductTypeClass[Read]           = ReadTypeClass
+  def literalTypeClass: ProductTypeClass[Literal]     = LiteralTypeClass
   def fragment[A: SetParameter](value: A): Vector[Fr] = Vector(sql"$value")
 
   implicit object readInvariant extends Invariant[Read] {
@@ -37,12 +34,12 @@ trait Slick
       def tailRecM[A, B](a: A)(f: (A) => DBIO[Either[A, B]]): DBIO[B] =
         f(a).flatMap {
           case Left(other) => tailRecM(other)(f)
-          case Right(b) => DBIO.successful(b)
+          case Right(b)    => DBIO.successful(b)
         }
     }
 
   implicit object FragmentMonoid extends Monoid[Fr] {
-    def empty: Fragment = sql""
+    def empty: Fragment                             = sql""
     def combine(x: Fragment, y: Fragment): Fragment = concat(x, y)
   }
 
@@ -50,16 +47,14 @@ trait Slick
     def map[A, B](fa: GetResult[A])(f: A => B): GetResult[B] = fa.andThen(f)
   }
 
-  implicit object SetParameterContravariant
-      extends Contravariant[SetParameter] {
+  implicit object SetParameterContravariant extends Contravariant[SetParameter] {
     def contramap[A, B](fa: SetParameter[A])(f: B => A): SetParameter[B] =
       SetParameter((v, pp) => pp.>>(f(v))(fa))
   }
 
   def const(value: String): Fr = sql"#$value"
 
-  def query[A: Read](n: Expression[A])(
-      implicit ns: NamingStrategy): DBIO[Vector[A]] =
+  def query[A: Read](n: Expression[A])(implicit ns: NamingStrategy): DBIO[Vector[A]] =
     run(n).as[A](Read[A].read)
   def update[A](n: DMLNode[A])(implicit ns: NamingStrategy): DBIO[Int] =
     run(n).asUpdate

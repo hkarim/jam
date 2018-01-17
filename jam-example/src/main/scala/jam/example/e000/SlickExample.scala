@@ -1,11 +1,6 @@
 package jam.example.e000
 
-import jam.example.model.{
-  CountryCode,
-  CountryEntity,
-  CountryLanguageEntity,
-  Name
-}
+import jam.example.model.{CountryCode, CountryEntity, CountryLanguageEntity, Name}
 import jam.sql._
 
 import scala.concurrent.Await
@@ -32,22 +27,19 @@ object SlickExample {
 
   def main(args: Array[String]): Unit = {
 
-    val country = CountryEntity
+    val country         = CountryEntity
     val countryLanguage = CountryLanguageEntity
 
     DML
       .update(country)
-      .set(country.name := Name("").param,
-           country.code := CountryCode("").param)
+      .set(country.name := Name("").param, country.code := CountryCode("").param)
       .where(country.name === Name("").param)
 
     val query =
       DQL
-        .from(
-          (country as 'c) innerJoin (countryLanguage as 'l) on ('c ~ country.code === 'l ~ countryLanguage.countryCode))
+        .from((country as 'c) innerJoin (countryLanguage as 'l) on ('c ~ country.code === 'l ~ countryLanguage.countryCode))
         .where('c ~ country.name === Name("Egypt").param)
-        .select(
-          'l ~ countryLanguage.language :: 'l ~ countryLanguage.isOfficial)
+        .select('l ~ countryLanguage.language :: 'l ~ countryLanguage.isOfficial)
         .query
         .map(_.headOption)
 

@@ -7,19 +7,16 @@ import jam.example.model._
 import jam.sql._
 
 trait CountryService[F[_]] {
-  def find(code: CountryCode)(implicit w: Encode[CountryCode],
-                              r: Decode[F, Country]): F[Option[Country]]
+  def find(code: CountryCode)(implicit w: Encode[CountryCode], r: Decode[F, Country]): F[Option[Country]]
 }
 
-class DBCountryService[F[_]: Jam: Monad](implicit val ns: NamingStrategy)
-    extends CountryService[F] {
+class DBCountryService[F[_]: Jam: Monad](implicit val ns: NamingStrategy) extends CountryService[F] {
   import jam.sql.syntax._
   import cats.implicits._
 
   val e: CountryEntity.type = CountryEntity
 
-  def find(code: CountryCode)(implicit w: Encode[CountryCode],
-                              r: Decode[F, Country]): F[Option[Country]] =
+  def find(code: CountryCode)(implicit w: Encode[CountryCode], r: Decode[F, Country]): F[Option[Country]] =
     DQL.from(e).where(e.code === code.param).select(e).query.map(_.headOption)
 
 }

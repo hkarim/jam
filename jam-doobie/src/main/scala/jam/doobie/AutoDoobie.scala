@@ -25,7 +25,7 @@ trait AutoDoobie { self: Doobie =>
     def project[F, G](bind: => Write[G], to: F => G, from: G => F): Write[F] =
       new Write[F] {
         implicit def write: doobie.Param[F] = {
-          val c = bind.write.composite
+          val c  = bind.write.composite
           val cf = c.imap[F]((v: G) => from(v))((v: F) => to(v))
           new doobie.util.param.Param(cf)
         }
@@ -45,9 +45,7 @@ trait AutoDoobie { self: Doobie =>
           doobie.util.composite.Composite.product(ch.read, ct.read)
       }
 
-    def project[F, G](instance: => Read[G],
-                      to: F => G,
-                      from: G => F): Read[F] = new Read[F] {
+    def project[F, G](instance: => Read[G], to: F => G, from: G => F): Read[F] = new Read[F] {
       implicit def read: doobie.Composite[F] = instance.read.imap(from)(to)
     }
   }
@@ -56,14 +54,11 @@ trait AutoDoobie { self: Doobie =>
 
     def emptyProduct: Literal[HNil] = (_: HNil) => Vector.empty[Fragment]
 
-    def product[H, T <: HList](ch: Literal[H],
-                               ct: Literal[T]): Literal[H :: T] = {
+    def product[H, T <: HList](ch: Literal[H], ct: Literal[T]): Literal[H :: T] = {
       case h :: t => ch.fragment(h) ++ ct.fragment(t)
     }
 
-    def project[F, G](bind: => Literal[G],
-                      to: F => G,
-                      from: G => F): Literal[F] =
+    def project[F, G](bind: => Literal[G], to: F => G, from: G => F): Literal[F] =
       (instance: F) => bind.fragment(to(instance))
   }
 }

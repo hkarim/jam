@@ -29,8 +29,7 @@ object ToPropertyVector {
     instance[C[A]](c => c.properties.vector)
 }
 object ToPropertyVectorPloy extends Poly1 {
-  implicit def property[A]
-    : Case.Aux[(ToPropertyVector[A], A), Vector[Property[_]]] =
+  implicit def property[A]: Case.Aux[(ToPropertyVector[A], A), Vector[Property[_]]] =
     at[(ToPropertyVector[A], A)] {
       case (isp, a) => isp(a)
     }
@@ -44,14 +43,10 @@ object Validator {
 
   implicit def hnil: Aux[HNil, HNil] = new Validator[HNil] { type Out = HNil }
 
-  implicit def hlistProperty[InH, InT <: HList, OutT <: HList]
-    : Aux[InH :: InT, Property[InH] :: OutT] = new Validator[InH :: InT] {
+  implicit def hlistProperty[InH, InT <: HList, OutT <: HList]: Aux[InH :: InT, Property[InH] :: OutT] = new Validator[InH :: InT] {
     type Out = Property[InH] :: OutT
   }
-  implicit def hlistComposite[InH,
-                              C[_] <: Composite[_],
-                              InT <: HList,
-                              OutT <: HList]: Aux[InH :: InT, C[InH] :: OutT] =
+  implicit def hlistComposite[InH, C[_] <: Composite[_], InT <: HList, OutT <: HList]: Aux[InH :: InT, C[InH] :: OutT] =
     new Validator[InH :: InT] {
       type Out = C[InH] :: OutT
     }
@@ -69,27 +64,21 @@ trait Infix[-O, -L[_], -R[_], A, +T] {
   def apply(operator: O, l: L[A], r: R[A]): Expression[T]
 }
 trait InfixLowPriorityInstances {
-  implicit def arithmeticOperator[A: Numeric]
-    : Infix[ArithmeticOperator, Expression, Expression, A, A] =
+  implicit def arithmeticOperator[A: Numeric]: Infix[ArithmeticOperator, Expression, Expression, A, A] =
     Infix.instance(InfixNode[A, A])
 
-  implicit def eqOperator[A]
-    : Infix[EqOperator, Expression, Expression, A, Boolean] =
+  implicit def eqOperator[A]: Infix[EqOperator, Expression, Expression, A, Boolean] =
     Infix.instance(InfixNode[A, Boolean])
 
-  implicit def partialOrderOperator[A]
-    : Infix[PartialOrderOperator, Expression, Expression, A, Boolean] =
+  implicit def partialOrderOperator[A]: Infix[PartialOrderOperator, Expression, Expression, A, Boolean] =
     Infix.instance(InfixNode[A, Boolean])
 
-  implicit val logicOperator
-    : Infix[LogicOperator, Expression, Expression, Boolean, Boolean] =
+  implicit val logicOperator: Infix[LogicOperator, Expression, Expression, Boolean, Boolean] =
     Infix.instance(InfixNode[Boolean, Boolean])
 }
 object Infix extends InfixLowPriorityInstances {
-  def apply[O, L[_], R[_], A, T](
-      implicit ev: Infix[O, L, R, A, T]): Infix[O, L, R, A, T] = ev
-  def instance[O, L[_], R[_], A, T](
-      f: (O, L[A], R[A]) => Expression[T]): Infix[O, L, R, A, T] =
+  def apply[O, L[_], R[_], A, T](implicit ev: Infix[O, L, R, A, T]): Infix[O, L, R, A, T] = ev
+  def instance[O, L[_], R[_], A, T](f: (O, L[A], R[A]) => Expression[T]): Infix[O, L, R, A, T] =
     (operator: O, l: L[A], r: R[A]) => f(operator, l, r)
 }
 
@@ -120,11 +109,11 @@ trait NamingStrategy {
 }
 object NamingStrategy {
   object MySQL extends NamingStrategy {
-    def name(e: Entity[_]): String = s"`${e.entityName}`"
+    def name(e: Entity[_]): String   = s"`${e.entityName}`"
     def name(p: Property[_]): String = s"`${p.name}`"
   }
   object Postgres extends NamingStrategy {
-    def name(e: Entity[_]): String = s""""${e.entityName}""""
+    def name(e: Entity[_]): String   = s""""${e.entityName}""""
     def name(p: Property[_]): String = s""""${p.name}""""
   }
 }

@@ -15,39 +15,32 @@ trait LiteralTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
   trait LiteralLowerPriorityInstances {
     implicit def option[A: Literal]: Literal[Option[A]] = {
       case Some(v) => Literal[A].fragment(v)
-      case None => Vector(const("NULL"))
+      case None    => Vector(const("NULL"))
     }
   }
 
   trait LiteralLowPriorityInstances extends LiteralLowerPriorityInstances {
 
-    implicit val string: Literal[String] = (a: String) =>
-      Vector(const(s"'$a'"))
+    implicit val string: Literal[String] = (a: String) => Vector(const(s"'$a'"))
     implicit def numeric[N: Numeric]: Literal[N] =
       (a: N) => Vector(const(s"$a"))
 
   }
 
-  object Literal
-      extends ProductTypeClassCompanion[Literal]
-      with LiteralLowPriorityInstances {
+  object Literal extends ProductTypeClassCompanion[Literal] with LiteralLowPriorityInstances {
     val typeClass: ProductTypeClass[Literal] = literalTypeClass
 
     @inline implicit def deriveLiteralHNil: Literal[HNil] =
       typeClass.emptyProduct
 
-    @inline implicit def deriveLiteralHCons[H, T <: HList](
-        implicit ch: Lazy[Literal[H]],
-        ct: Lazy[Literal[T]]): Literal[H :: T] =
+    @inline implicit def deriveLiteralHCons[H, T <: HList](implicit ch: Lazy[Literal[H]], ct: Lazy[Literal[T]]): Literal[H :: T] =
       typeClass.product(ch.value, ct.value)
 
-    @inline implicit def deriveLiteralInstance[F, G](
-        implicit gen: Generic.Aux[F, G],
-        cg: Lazy[Literal[G]]): Literal[F] =
+    @inline implicit def deriveLiteralInstance[F, G](implicit gen: Generic.Aux[F, G], cg: Lazy[Literal[G]]): Literal[F] =
       typeClass.project(cg.value, gen.to, gen.from)
 
     def apply[A](implicit ev: Literal[A]): Literal[A] = ev
-    def instance[A](f: A => Vector[Fr]): Literal[A] = (a: A) => f(a)
+    def instance[A](f: A => Vector[Fr]): Literal[A]   = (a: A) => f(a)
   }
 
   implicit class LiteralOps[A](a: A) {
