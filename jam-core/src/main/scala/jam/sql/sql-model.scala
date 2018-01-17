@@ -48,64 +48,36 @@ object Validator {
     }
 }
 
-trait Equatable[L[_], R[_]] {
-  def eq[A](l: L[A], r: R[A]): Expression[Boolean]
-  def neq[A](l: L[A], r: R[A]): Expression[Boolean]
+trait Prefix[-O, -F[_], A, +T] {
+  def apply(operator: O, f: F[A]): Expression[T]
 }
-trait EquatableLowPriorityInstances {
-  implicit def swap[L[_], R[_]](implicit ev: Equatable[R, L]): Equatable[L, R] = new Equatable[L, R] {
-    def eq[A](l: L[A], r: R[A]): Expression[Boolean]  = ev.eq(r, l)
-    def neq[A](l: L[A], r: R[A]): Expression[Boolean] = ev.neq(r, l)
-  }
-}
-object Equatable extends EquatableLowPriorityInstances {
-
-  implicit def property[P[_] <: Property[_], E[_] <: Expression[_]]: Equatable[P, E] = new Equatable[P, E] {
-    def eq[A](l: P[A], r: E[A]): Expression[Boolean]  = Eq(l, r)
-    def neq[A](l: P[A], r: E[A]): Expression[Boolean] = Ne(l, r)
-  }
-
-  implicit def composite[C[_] <: Composite[_], E[_] <: Expression[_]]: Equatable[C, E] = new Equatable[C, E] {
-    def eq[A](l: C[A], r: E[A]): Expression[Boolean]  = CEq(l, r)
-    def neq[A](l: C[A], r: E[A]): Expression[Boolean] = CNe(l, r)
-  }
-
-  implicit def alias[N[_] <: PropertyAliasNode[_], E[_] <: Expression[_]]: Equatable[N, E] = new Equatable[N, E] {
-    def eq[A](l: N[A], r: E[A]): Expression[Boolean]  = Eq(l, r)
-    def neq[A](l: N[A], r: E[A]): Expression[Boolean] = Ne(l, r)
-  }
+trait PrefixLowPriorityInstances {
 
 }
-
-trait ValueType[A, B] {
-  def generic: Generic.Aux[A, B :: HNil]
-  def valueOf(a: A): B     = generic.to(a).head
-  def toValueType(b: B): A = generic.from(b :: HNil)
+object Prefix {
+  def apply[O, F[_], A, T](ev: Prefix[O, F, A, T]): Prefix[O, F, A, T] = ev
 }
 
-trait Comparable[A] {
-  def gt[L[_] <: Expression[_], R[_] <: Expression[_]](l: L[A], r: R[A]): Expression[Boolean]
-  def ge[L[_] <: Expression[_], R[_] <: Expression[_]](l: L[A], r: R[A]): Expression[Boolean]
-  def lt[L[_] <: Expression[_], R[_] <: Expression[_]](l: L[A], r: R[A]): Expression[Boolean]
-  def le[L[_] <: Expression[_], R[_] <: Expression[_]](l: L[A], r: R[A]): Expression[Boolean]
+trait Infix[-O, -L[_], -R[_], A, +T] {
+  def apply(operator: O, l: L[A], r: R[A]): Expression[T]
 }
-trait ComparableLowPriorityInstances {
-  implicit def numeric[A: Numeric]: Comparable[A] = new Comparable[A] {
-    def gt[L[_] <: Expression[_], R[_] <: Expression[_]](l: L[A], r: R[A]): Expression[Boolean] = Gt(l, r)
-    def ge[L[_] <: Expression[_], R[_] <: Expression[_]](l: L[A], r: R[A]): Expression[Boolean] = Ge(l, r)
-    def lt[L[_] <: Expression[_], R[_] <: Expression[_]](l: L[A], r: R[A]): Expression[Boolean] = Lt(l, r)
-    def le[L[_] <: Expression[_], R[_] <: Expression[_]](l: L[A], r: R[A]): Expression[Boolean] = Le(l, r)
-  }
+trait InfixLowPriorityInstances {
+  implicit def arithmeticOperator[A: Numeric]: Infix[ArithmeticOperator, Expression, Expression, A, A] =
+    Infix.instance(InfixNode[A, A])
+
+  implicit def eqOperator[A]: Infix[EqOperator, Expression, Expression, A, Boolean] =
+    Infix.instance(InfixNode[A, Boolean])
+
+  implicit def partialOrderOperator[A]: Infix[PartialOrderOperator, Expression, Expression, A, Boolean] =
+    Infix.instance(InfixNode[A, Boolean])
+
+  implicit val logicOperator: Infix[LogicOperator, Expression, Expression, Boolean, Boolean] =
+    Infix.instance(InfixNode[Boolean, Boolean])
 }
-object Comparable extends ComparableLowPriorityInstances {
-  def apply[A](ev: Comparable[A]): Comparable[A] = ev
-  def instance[A, B: Comparable](implicit g: Generic.Aux[A, B :: HNil]): Comparable[A] = new Comparable[A] with ValueType[A, B] {
-    def generic: Generic.Aux[A, B :: HNil]                                                      = g // just to get rid of the compiler warning
-    def gt[L[_] <: Expression[_], R[_] <: Expression[_]](l: L[A], r: R[A]): Expression[Boolean] = Gt(l, r)
-    def ge[L[_] <: Expression[_], R[_] <: Expression[_]](l: L[A], r: R[A]): Expression[Boolean] = Ge(l, r)
-    def lt[L[_] <: Expression[_], R[_] <: Expression[_]](l: L[A], r: R[A]): Expression[Boolean] = Lt(l, r)
-    def le[L[_] <: Expression[_], R[_] <: Expression[_]](l: L[A], r: R[A]): Expression[Boolean] = Le(l, r)
-  }
+object Infix extends InfixLowPriorityInstances {
+  def apply[O, L[_], R[_], A, T](implicit ev: Infix[O, L, R, A, T]): Infix[O, L, R, A, T] = ev
+  def instance[O, L[_], R[_], A, T](f: (O, L[A], R[A]) => Expression[T]): Infix[O, L, R, A, T] =
+    (operator: O, l: L[A], r: R[A]) => f(operator, l, r)
 }
 
 trait Write[A] {

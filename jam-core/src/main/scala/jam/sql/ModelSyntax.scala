@@ -9,29 +9,44 @@ trait ModelSyntax {
 
   def property[P](name: String): Property[P] = Property.Strict[P](name)
 
-  implicit class BooleanOps(l: Expression[Boolean]) {
-    def and(r: Expression[Boolean]): Expression[Boolean] = And(l, r)
-    def or(r: Expression[Boolean]): Expression[Boolean]  = Or(l, r)
-  }
-  def not(e: Expression[Boolean]): Expression[Boolean] = Not(e)
-
-  implicit class EquatableOps[L[_], A](l: L[A]) {
-    def ===[R[_]](r: R[A])(implicit ev: Equatable[L, R]): Expression[Boolean] = ev.eq(l, r)
-    def =!=[R[_]](r: R[A])(implicit ev: Equatable[L, R]): Expression[Boolean] = ev.neq(l, r)
-  }
-
-  implicit class ComparableOps[L[_] <: Expression[_], A](l: L[A]) {
-    def >[R[_] <: Expression[_]](r: R[A])(implicit ev: Comparable[A]): Expression[Boolean]  = ev.gt(l, r)
-    def >=[R[_] <: Expression[_]](r: R[A])(implicit ev: Comparable[A]): Expression[Boolean] = ev.ge(l, r)
-    def <[R[_] <: Expression[_]](r: R[A])(implicit ev: Comparable[A]): Expression[Boolean]  = ev.lt(l, r)
-    def <=[R[_] <: Expression[_]](r: R[A])(implicit ev: Comparable[A]): Expression[Boolean] = ev.le(l, r)
-  }
-
   implicit class ExpressionOps[A](l: Expression[A]) {
     def in(first: Expression[A], rest: Expression[A]*): Expression[Boolean]    = InNode(l, first +: rest, negate = false)
     def notIn(first: Expression[A], rest: Expression[A]*): Expression[Boolean] = InNode(l, first +: rest, negate = true)
-    def like(e: Expression[A]): Expression[Boolean]                            = Like(l, e)
+    def like(e: Expression[A]): Expression[Boolean]                            = LikeNode(l, e, negate = false)
+    def notLike(e: Expression[A]): Expression[Boolean]                         = LikeNode(l, e, negate = true)
+
+    def +(r: Expression[A])(implicit ev: Infix[ArithmeticOperator.Plus.type, Expression, Expression, A, A]): Expression[A] =
+      ev(ArithmeticOperator.Plus, l, r)
+    def -(r: Expression[A])(implicit ev: Infix[ArithmeticOperator.Minus.type, Expression, Expression, A, A]): Expression[A] =
+      ev(ArithmeticOperator.Minus, l, r)
+    def *(r: Expression[A])(implicit ev: Infix[ArithmeticOperator.Multiply.type, Expression, Expression, A, A]): Expression[A] =
+      ev(ArithmeticOperator.Multiply, l, r)
+    def /(r: Expression[A])(implicit ev: Infix[ArithmeticOperator.Divide.type, Expression, Expression, A, A]): Expression[A] =
+      ev(ArithmeticOperator.Divide, l, r)
+
+    def ===(r: Expression[A])(implicit ev: Infix[EqOperator.Eq.type, Expression, Expression, A, Boolean]): Expression[Boolean] =
+      ev(EqOperator.Eq, l, r)
+    def =!=(r: Expression[A])(implicit ev: Infix[EqOperator.Ne.type, Expression, Expression, A, Boolean]): Expression[Boolean] =
+      ev(EqOperator.Ne, l, r)
+
+    def >(r: Expression[A])(implicit ev: Infix[PartialOrderOperator.Gt.type, Expression, Expression, A, Boolean]): Expression[Boolean] =
+      ev(PartialOrderOperator.Gt, l, r)
+    def >=(r: Expression[A])(implicit ev: Infix[PartialOrderOperator.Ge.type, Expression, Expression, A, Boolean]): Expression[Boolean] =
+      ev(PartialOrderOperator.Ge, l, r)
+    def <(r: Expression[A])(implicit ev: Infix[PartialOrderOperator.Lt.type, Expression, Expression, A, Boolean]): Expression[Boolean] =
+      ev(PartialOrderOperator.Lt, l, r)
+    def <=(r: Expression[A])(implicit ev: Infix[PartialOrderOperator.Le.type, Expression, Expression, A, Boolean]): Expression[Boolean] =
+      ev(PartialOrderOperator.Le, l, r)
+
   }
+
+  implicit class BooleanOps(l: Expression[Boolean]) {
+    def and(r: Expression[Boolean])(implicit ev: Infix[LogicOperator.And.type, Expression, Expression, Boolean, Boolean]): Expression[Boolean] =
+      ev(LogicOperator.And, l, r)
+    def or(r: Expression[Boolean])(implicit ev: Infix[LogicOperator.Or.type, Expression, Expression, Boolean, Boolean]): Expression[Boolean] =
+      ev(LogicOperator.Or, l, r)
+  }
+  def not(e: Expression[Boolean]): Expression[Boolean] = NotNode(e)
 
   implicit class PropertiesOps[In <: HList, Out <: HList, LOut <: HList, ZOut <: HList](out: Out) {
     def properties[A](implicit g: Generic.Aux[A, In],

@@ -31,10 +31,14 @@ object Model {
 
   implicit val ns: NamingStrategy = NamingStrategy.Postgres // or MySQL
 
-  def findCountry[F[_]: Jam : Functor](name: String)(implicit w: Write[String], r: Read[F, Country]): F[Option[Country]] =
+  def findCountry[F[_]: Jam : Functor](name: String)
+                                      (implicit
+                                       ws: Write[String],
+                                       ll: Literal[Long],
+                                       r: Read[F, Country]): F[Option[Country]] =
     DQL
       .from(c)
-      .where(c.name === name.param)
+      .where(c.name === name.param and (c.population - 100L.literal) > 200L.literal)
       .select(c)
       .query
       .map(_.headOption)
@@ -69,6 +73,23 @@ object Main {
 
     findCountry2("Egypt".param).query.map(_.headOption).transact(xa).unsafeRunSync()
 
+
+
+    findCountry[ConnectionIO]("Egypt").transact(xa).unsafeToFuture()
+  }
+
+  def slick: Future[Option[Country]] = {
+    import jam.slick.implicits._
+    import jam.slick.jdbcProfile.api._
+
+    Class.forName("org.postgresql.Driver")
+
+    val db: Database = Database.forURL(
+      url = "jdbc:postgresql:demo",
+      user = "jeelona",
+      password = "jeelona"
+    )
+
     DML
       .insertInto(c)
       .values(Country("code", "name", 1L).param)
@@ -96,29 +117,23 @@ object Main {
 
     DML
       .update(c)
-      .set(c.name := DQL.select("some name".literal))
-      .where(c.name in ("a".literal, "b".param))
+      .set(c.name := DQL.select("some name".literal).enclose, c.population := c.population - 1L.literal)
+      .where( (c.code :: c.name) in ("a".literal :: "b".param))
+      .update
+      .transactionally
+      .unsafeToFuture(db)
 
     DML
       .deleteFrom(c)
       .where(c.population <= 0L.param)
 
-    findCountry[ConnectionIO]("Egypt").transact(xa).unsafeToFuture()
-  }
+    c.population + 1L.literal
+    c.population - 1L.literal
+    c.population * 1L.literal
+    c.population / 1L.literal
+    //c.name - "".literal
 
-  def slick: Future[Option[Country]] = {
-    import jam.slick.implicits._
-    import jam.slick.jdbcProfile.api._
-
-    Class.forName("org.postgresql.Driver")
-
-    val db: Database = Database.forURL(
-      url = "jdbc:postgresql:demo",
-      user = "jeelona",
-      password = "jeelona"
-    )
-
-    findCountry2("Egypt".param).query.transactionally.map(_.headOption).unsafeToFuture(db)
+    c.population > 1L.literal
 
     findCountry[DBIO]("Egypt").unsafeToFuture(db)
 

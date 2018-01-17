@@ -5,6 +5,7 @@ import cats.data.NonEmptyList
 trait Node
 
 trait Expression[+A] extends Node { self =>
+  def enclose: Expression[A] = EncloseExpression[A](this)
   def ~(alias: Symbol): Expression[A] = SubstitutedExpression(alias, self)
 }
 case class ExpressionList[H](expressions: Vector[Expression[_]]) extends Expression[H]
@@ -221,6 +222,7 @@ trait DMLWhere extends Where
 case class EntityName(value: Entity[_])                                  extends Node
 case class PropertyName(value: Property[_])                              extends Node
 case class SubstitutedExpression[A](alias: Symbol, value: Expression[A]) extends Expression[A]
+case class EncloseExpression[A](value: Expression[A]) extends Expression[A]
 
 case class PropertyAliasNode[A](alias: Symbol, value: Property[A]) extends Expression[A] {
   def asc: OrderLikeNode[A]  = AscNode(this)
@@ -316,21 +318,42 @@ case class SetNode[A](parent: Node, value: TraversableOnce[A], ts: TSet[A]) exte
 
 case class DeleteFromNode[F[_], A](parent: Node, value: F[A], tf: TFrom[F, A]) extends Node with HasDMLWhere
 
-case class Eq[L[_] <: Expression[_], R[_] <: Expression[_], A](lhs: L[A], rhs: R[A]) extends Expression[Boolean]
-case class Ne[L[_] <: Expression[_], R[_] <: Expression[_], A](lhs: L[A], rhs: R[A]) extends Expression[Boolean]
-case class Lt[L[_] <: Expression[_], R[_] <: Expression[_], A](lhs: L[A], rhs: R[A]) extends Expression[Boolean]
-case class Le[L[_] <: Expression[_], R[_] <: Expression[_], A](lhs: L[A], rhs: R[A]) extends Expression[Boolean]
-case class Gt[L[_] <: Expression[_], R[_] <: Expression[_], A](lhs: L[A], rhs: R[A]) extends Expression[Boolean]
-case class Ge[L[_] <: Expression[_], R[_] <: Expression[_], A](lhs: L[A], rhs: R[A]) extends Expression[Boolean]
+trait BinaryOperator extends Node
 
-case class CEq[L[_] <: Expression[_], R[_] <: Expression[_], A](lhs: L[A], rhs: R[A]) extends Expression[Boolean]
-case class CNe[L[_] <: Expression[_], R[_] <: Expression[_], A](lhs: L[A], rhs: R[A]) extends Expression[Boolean]
+sealed trait ArithmeticOperator extends BinaryOperator
+object ArithmeticOperator {
+  case object Plus extends ArithmeticOperator
+  case object Minus extends ArithmeticOperator
+  case object Multiply extends ArithmeticOperator
+  case object Divide extends ArithmeticOperator
+}
+
+sealed trait EqOperator extends BinaryOperator
+object EqOperator {
+  case object Eq extends EqOperator
+  case object Ne extends EqOperator
+}
+
+sealed trait PartialOrderOperator extends BinaryOperator
+object PartialOrderOperator {
+  case object Gt extends PartialOrderOperator
+  case object Ge extends PartialOrderOperator
+  case object Lt extends PartialOrderOperator
+  case object Le extends PartialOrderOperator
+}
+
+sealed trait LogicOperator extends BinaryOperator
+object LogicOperator {
+  case object And extends LogicOperator
+  case object Or extends LogicOperator
+}
+
+case class InfixNode[A, T](operator: BinaryOperator, lhs: Expression[A], rhs: Expression[A]) extends Expression[T]
+
 
 case class InNode[A](lhs: Expression[A], rhs: TraversableOnce[Expression[A]], negate: Boolean) extends Expression[Boolean]
 
-case class Like[A](lhs: Expression[A], rhs: Expression[A]) extends Expression[Boolean]
+case class LikeNode[A](lhs: Expression[A], rhs: Expression[A], negate: Boolean) extends Expression[Boolean]
 
-case class And(lhs: Expression[Boolean], rhs: Expression[Boolean]) extends Expression[Boolean]
-case class Or(lhs: Expression[Boolean], rhs: Expression[Boolean])  extends Expression[Boolean]
 
-case class Not(e: Expression[Boolean]) extends Expression[Boolean]
+case class NotNode(e: Expression[Boolean]) extends Expression[Boolean]
