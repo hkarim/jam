@@ -29,13 +29,18 @@ trait Backend[DBF[_], R[_], W[_]]
   }
 
   def run(n: Node)(implicit ns: NamingStrategy, M: Monoid[Fr]): Fr = n match {
-    case EntityName(e)                 => const(ns.name(e))
-    case PropertyName(p)               => const(ns.name(p))
-    case PropertyAliasNode(a, v)       => const(s"${a.name}.") |+| run(PropertyName(v))
-    case SubstitutedExpression(a, _)   => const(a.name)
-    case EncloseExpression(v)          => const("(") |+| run(v) |+| const(")")
-    case AsNode(a, v: DQLNode[_], t)   => const("(") |+| run(t(v)) |+| const(")") |+| const(" as ") |+| const(a.name)
-    case AsNode(a, v, t)               => run(t(v)) |+| const(" as ") |+| const(a.name)
+    case EntityName(e)               => const(ns.name(e))
+    case PropertyName(p)             => const(ns.name(p))
+    case PropertyAliasNode(a, v)     => const(s"${a.name}.") |+| run(PropertyName(v))
+    case SubstitutedExpression(a, _) => const(a.name)
+    case EncloseExpression(v)        => const("(") |+| run(v) |+| const(")")
+    case AsNode(a, v, t) =>
+      v match {
+        case _: DQLNode[_] =>
+          const("(") |+| run(t(v)) |+| const(")") |+| const(" as ") |+| const(a.name)
+        case _ =>
+          run(t(v)) |+| const(" as ") |+| const(a.name)
+      }
     case p: Property[_]                => run(PropertyName(p))
     case c: Composite[_]               => c.properties.vector.map(PropertyName).map(run).sep(comma)
     case BindNode(v)                   => v.sep(comma)
@@ -45,7 +50,7 @@ trait Backend[DBF[_], R[_], W[_]]
 
     case SetPropertyNode(p, v) =>
       v match {
-        case SelectNode(_, _, _) =>
+        case _: DQLNode[_] =>
           run(PropertyName(p)) |+| const("=") |+| run(v).enclose
         case _ => run(PropertyName(p)) |+| const("=") |+| run(v)
       }
@@ -108,11 +113,9 @@ trait Backend[DBF[_], R[_], W[_]]
     case LogicOperator.And => const(" and ")
     case LogicOperator.Or  => const(" or ")
 
-    case InfixNode(op @ LogicOperator.And, l, r) =>
-      run(l).enclose |+| run(op) |+| run(r).enclose
-    case InfixNode(op @ LogicOperator.Or, l, r) =>
-      run(l).enclose |+| run(op) |+| run(r).enclose
-    case InfixNode(op, l, r) => run(l) |+| run(op) |+| run(r)
+    case InfixNode(op @ LogicOperator.And, l, r) => run(l).enclose |+| run(op) |+| run(r).enclose
+    case InfixNode(op @ LogicOperator.Or, l, r)  => run(l).enclose |+| run(op) |+| run(r).enclose
+    case InfixNode(op, l, r)                     => run(l) |+| run(op) |+| run(r)
 
     case NotNode(e) => const("not ") |+| run(e).enclose
 

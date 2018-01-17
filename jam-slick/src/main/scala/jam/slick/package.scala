@@ -1,7 +1,7 @@
 package jam
 
-import _root_.slick.jdbc.{ActionBasedSQLInterpolation, JdbcProfile, PositionedParameters, SQLActionBuilder}
 import _root_.slick.dbio.DBIO
+import _root_.slick.jdbc.{JdbcProfile, PositionedParameters, SQLActionBuilder}
 
 package object slick {
 
@@ -9,8 +9,10 @@ package object slick {
 
   val jdbcProfile: JdbcProfile = new JdbcProfile {}
 
+  /*
   implicit def actionBasedSQLInterpolation(s: StringContext): ActionBasedSQLInterpolation =
     new ActionBasedSQLInterpolation(s)
+  */
 
   def concat(a: Fragment, b: Fragment): Fragment =
     SQLActionBuilder(a.queryParts ++ b.queryParts, (p: Unit, pp: PositionedParameters) => {
@@ -24,6 +26,9 @@ package object slick {
       def unsafeToFuture(db: jdbcProfile.api.Database): Future[A] =
         db.run(dbio)
     }
+
+    //implicit def gr[A](implicit r: Lazy[Read[A]]): GetResult[A] = r.value.read
+    //implicit def sp[A](implicit w: Lazy[Write[A]]): SetParameter[A] = w.value.write
   }
 
 }

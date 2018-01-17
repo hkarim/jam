@@ -39,6 +39,7 @@ object Model {
         c.name.isNotNull and
           c.name === name.param and
           (c.population - 100L.literal) > 200L.literal)
+      .orderBy(c.population.desc)
       .select(c)
       .query
       .map(_.headOption)
@@ -82,7 +83,7 @@ object Main {
 
   def slick: Future[Option[Country]] = {
     import jam.slick.implicits._
-    import jam.slick.jdbcProfile.api._
+    import _root_.slick.jdbc.PostgresProfile.api._
 
     Class.forName("org.postgresql.Driver")
 

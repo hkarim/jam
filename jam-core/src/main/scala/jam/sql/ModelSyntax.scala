@@ -131,12 +131,13 @@ trait ModelSyntax {
 
   trait PropertyLikeSyntax[A] {
     def lhs: Expression[A]
+
     def isNull: Expression[Boolean]    = IsNullNode(lhs, negate = false)
     def isNotNull: Expression[Boolean] = IsNullNode(lhs, negate = true)
-    def like(e: Expression[A]): Expression[Boolean] =
-      LikeNode(lhs, e, negate = false)
-    def notLike(e: Expression[A]): Expression[Boolean] =
-      LikeNode(lhs, e, negate = true)
+
+    def like(e: Expression[A]): Expression[Boolean]    = LikeNode(lhs, e, negate = false)
+    def notLike(e: Expression[A]): Expression[Boolean] = LikeNode(lhs, e, negate = true)
+
     def asc: OrderLikeNode[A]  = AscNode(lhs)
     def desc: OrderLikeNode[A] = DescNode(lhs)
   }

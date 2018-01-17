@@ -250,10 +250,7 @@ case class PropertyName(value: Property[_])                              extends
 case class SubstitutedExpression[A](alias: Symbol, value: Expression[A]) extends Expression[A]
 case class EncloseExpression[A](value: Expression[A])                    extends Expression[A]
 
-case class PropertyAliasNode[A](alias: Symbol, value: Property[A]) extends Expression[A] {
-  //def asc: OrderLikeNode[A]  = AscNode(this)
-  //def desc: OrderLikeNode[A] = DescNode(this)
-}
+case class PropertyAliasNode[A](alias: Symbol, value: Property[A]) extends Expression[A]
 
 sealed trait AsLikeNode[+A]                                           extends Expression[A] with JoinLikeNode[A] with HasJoin
 case class AsNode[F[_], A](alias: Symbol, value: F[A], ta: TAs[F, A]) extends AsLikeNode[A]
@@ -278,8 +275,7 @@ object JoinType {
 }
 
 case class JoinNode[F[_], A](parent: Node, jt: JoinType, value: F[A], tj: TJoin[F, A]) extends JoinLikeNode[A] with HasJoin {
-  def on[G[_], T](fa: G[T])(implicit ev: TWhere[G, T]): OnNode[G, T] =
-    OnNode(this, fa, ev)
+  def on[G[_], T](fa: G[T])(implicit ev: TWhere[G, T]): OnNode[G, T] = OnNode(this, fa, ev)
 }
 case class OnNode[F[_], A](parent: Node, value: F[A], tw: TWhere[F, A]) extends JoinLikeNode[A] with HasJoin
 

@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext
 
 trait SlickSyntax { self: Slick =>
 
-  implicit def actionBasedSQLInterpolation(s: StringContext): ActionBasedSQLInterpolation =
+  protected[this] implicit def actionBasedSQLInterpolation(s: StringContext): ActionBasedSQLInterpolation =
     new ActionBasedSQLInterpolation(s)
 
   implicit def entitySyntax[E](implicit ec: ExecutionContext): EntitySyntax[E] = new EntitySyntax[E] {
