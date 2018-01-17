@@ -7,16 +7,19 @@ import jam.example.model._
 import jam.sql._
 
 trait CountryService[F[_]] {
-  def find(code: CountryCode)(implicit w: Encode[CountryCode], r: Decode[F, Country]): F[Option[Country]]
+  def find(code: CountryCode)(implicit w: Encode[CountryCode],
+                              r: Decode[F, Country]): F[Option[Country]]
 }
 
-class DBCountryService[F[_]: Jam: Monad](implicit val ns: NamingStrategy) extends CountryService[F] {
+class DBCountryService[F[_]: Jam: Monad](implicit val ns: NamingStrategy)
+    extends CountryService[F] {
   import jam.sql.syntax._
   import cats.implicits._
 
   val e: CountryEntity.type = CountryEntity
 
-  def find(code: CountryCode)(implicit w: Encode[CountryCode], r: Decode[F, Country]): F[Option[Country]] =
+  def find(code: CountryCode)(implicit w: Encode[CountryCode],
+                              r: Decode[F, Country]): F[Option[Country]] =
     DQL.from(e).where(e.code === code.param).select(e).query.map(_.headOption)
 
 }
@@ -56,10 +59,12 @@ object DoobieExample {
 
   implicit val ns: NamingStrategy = NamingStrategy.Postgres
 
-  implicit val metaUUID: Meta[UUID]               = isoMeta[UUID, String]
-  implicit val metaCompanyType: Meta[CompanyType] = isoMeta[CompanyType, String]
+  implicit val metaUUID: Meta[UUID] = isoMeta[UUID, String]
+  implicit val metaCompanyType: Meta[CompanyType] =
+    isoMeta[CompanyType, String]
 
-  val companyService: CountryService[ConnectionIO] = new DBCountryService[ConnectionIO]
+  val companyService: CountryService[ConnectionIO] =
+    new DBCountryService[ConnectionIO]
   companyService.find(CountryCode("")).transact(xa)
 
 }

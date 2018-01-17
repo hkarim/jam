@@ -13,7 +13,9 @@ object Queries {
 
   val e: CountryEntity.type = CountryEntity
 
-  def q01(name: Name, limit: Long)(implicit et: Encode[Name], el: Constant[Long]): DQLNode[CountryCode :: Name :: HNil] =
+  def q01(name: Name, limit: Long)(
+      implicit et: Encode[Name],
+      el: Constant[Long]): DQLNode[CountryCode :: Name :: HNil] =
     DQL
       .from(e)
       .where(e.name like name.param)

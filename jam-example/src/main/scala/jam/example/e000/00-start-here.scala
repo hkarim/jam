@@ -9,13 +9,12 @@ import shapeless._
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
-
 object Model {
 
-  import jam.sql._         // for entity
-  import jam.sql.syntax._  // for sql dsl
-  import cats.Functor      // to map on query results
-  import cats.implicits._  // for functor instance
+  import jam.sql._ // for entity
+  import jam.sql.syntax._ // for sql dsl
+  import cats.Functor // to map on query results
+  import cats.implicits._ // for functor instance
 
   case class Country(code: String, name: String, population: Long)
 
@@ -24,21 +23,24 @@ object Model {
     val code: Property[String] = property("code")
     val name: Property[String] = property("name")
     val population: Property[Long] = property("population")
-    val properties: Properties[Country] = (code :: name :: population :: HNil).properties[Country]
+    val properties: Properties[Country] =
+      (code :: name :: population :: HNil).properties[Country]
   }
 
   val c: CountryEntity.type = CountryEntity
 
   implicit val ns: NamingStrategy = NamingStrategy.Postgres // or MySQL
 
-  def findCountry[F[_]: Jam : Functor](name: String)
-                                      (implicit
-                                       ws: Encode[String],
-                                       ll: Constant[Long],
-                                       r: Decode[F, Country]): F[Option[Country]] =
+  def findCountry[F[_]: Jam: Functor](name: String)(
+      implicit ws: Encode[String],
+      ll: Constant[Long],
+      r: Decode[F, Country]): F[Option[Country]] =
     DQL
       .from(c)
-      .where(c.name === name.param and (c.population - 100L.literal) > 200L.literal)
+      .where(
+        c.name.isNotNull and
+          c.name === name.param and
+          (c.population - 100L.literal) > 200L.literal)
       .select(c)
       .query
       .map(_.headOption)
@@ -49,7 +51,8 @@ object Model {
       .where(c.name === name)
       .select(c)
 
-  def count[A](e: Expression[A]): FunctionNode[A, Long] = FunctionNode("count", e)
+  def count[A](e: Expression[A]): FunctionNode[A, Long] =
+    FunctionNode("count", e)
   def countCountries: DQLNode[Long] = DQL.from(c).select(count(c.code))
 
 }
@@ -71,9 +74,10 @@ object Main {
       "jeelona"
     )
 
-    findCountry2("Egypt".param).query.map(_.headOption).transact(xa).unsafeRunSync()
-
-
+    findCountry2("Egypt".param).query
+      .map(_.headOption)
+      .transact(xa)
+      .unsafeRunSync()
 
     findCountry[ConnectionIO]("Egypt").transact(xa).unsafeToFuture()
   }
@@ -89,6 +93,18 @@ object Main {
       user = "jeelona",
       password = "jeelona"
     )
+
+    DQL
+      .from(
+        DQL
+          .from(c)
+          .select(c.population :: c.code)
+          .as('l)
+          .innerJoin(c as 'r) on ('l ~ c.code === 'r ~ c.code))
+      .select('l ~ c.population)
+      .query
+      .map(_.headOption)
+      .unsafeToFuture(db)
 
     DML
       .insertInto(c)
@@ -117,8 +133,9 @@ object Main {
 
     DML
       .update(c)
-      .set(c.name := DQL.select("some name".literal).enclose, c.population := c.population - 1L.literal)
-      .where( (c.code :: c.name) in ("a".literal :: "b".param))
+      .set(c.name := DQL.select("some name".literal).enclose,
+           c.population := c.population - 1L.literal)
+      .where((c.code :: c.name) in ("a".literal :: "b".param))
       .update
       .transactionally
       .unsafeToFuture(db)
@@ -126,6 +143,16 @@ object Main {
     DML
       .deleteFrom(c)
       .where(c.population <= 0L.param)
+      .update
+      .transactionally
+      .unsafeToFuture(db)
+
+    DML
+      .deleteFrom(c)
+      .where(c.population in DQL.select(1L.literal))
+      .update
+      .transactionally
+      .unsafeToFuture(db)
 
     c.population + 1L.literal
     c.population - 1L.literal

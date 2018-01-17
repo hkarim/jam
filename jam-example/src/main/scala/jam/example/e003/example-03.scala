@@ -15,7 +15,8 @@ trait CompanyService[F[_]] {
 
 import jam.slick.implicits._
 
-class SlickCompanyService(implicit val ns: NamingStrategy) extends CompanyService[DBIO] {
+class SlickCompanyService(implicit val ns: NamingStrategy)
+    extends CompanyService[DBIO] {
 
   val e: CompanyEntity.type = CompanyEntity
 

@@ -11,6 +11,7 @@ package object model {
     Iso.instance[A, String](e.to)(e.apply)
 
   implicit val isoInstantTimestamp: Iso[Instant, Timestamp] =
-    Iso.instance[Instant, Timestamp](Timestamp.from)(ts => Instant.ofEpochMilli(ts.getTime))
+    Iso.instance[Instant, Timestamp](Timestamp.from)(ts =>
+      Instant.ofEpochMilli(ts.getTime))
 
 }
