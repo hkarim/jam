@@ -44,8 +44,8 @@ trait Backend[DBF[_], R[_], W[_]]
       }
     case p: Property[_]                => run(PropertyName(p))
     case c: Composite[_]               => c.properties.vector.map(PropertyName).map(run).sep(comma)
-    case BindNode(v)                   => v.sep(comma)
-    case LiteralNode(v)                => v.sep(comma)
+    case BindNode(a, w)                => w.fr(a).sep(comma)
+    case LiteralNode(a, l)             => l.fr(a).sep(comma)
     case PropertyList(ps)              => ps.map(p => run(PropertyName(p))).sep(comma)
     case EntityPropertyListNode(e, pl) => run(EntityName(e)) |+| run(pl).enclose
 
@@ -56,14 +56,14 @@ trait Backend[DBF[_], R[_], W[_]]
         case _ => run(PropertyName(p)) |+| const("=") |+| run(v)
       }
 
-    case SetCompositeNode(c, BindNode(frs)) =>
+    case SetCompositeNode(c, BindNode(a, w)) =>
       c.properties.vector
-        .zip(frs)
+        .zip(w.fr(a))
         .map { case (p, f) => run(PropertyName(p)) |+| const("=") |+| f }
         .sep(comma)
-    case SetCompositeNode(c, LiteralNode(frs)) =>
+    case SetCompositeNode(c, LiteralNode(a, l)) =>
       c.properties.vector
-        .zip(frs)
+        .zip(l.fr(a))
         .map { case (p, f) => run(PropertyName(p)) |+| const("=") |+| f }
         .sep(comma)
 

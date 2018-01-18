@@ -47,10 +47,10 @@ trait WriteTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
   }
 
   implicit class BindNodeOps[A](a: A) {
-    def param(implicit ev: Write[A]): BindNode[A] = BindNode(ev.fr(a))
+    def param(implicit ev: Write[A]): BindNode[A] = BindNode(a, ev)
   }
 
   implicit def writeToEncode[A](implicit w: Write[A]): Encode[A] =
-    Kleisli[BindExpression, A, A](a => BindNode[A](w.fr(a)))
+    Kleisli[BindExpression, A, A](a => BindNode[A](a, w))
 
 }

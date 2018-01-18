@@ -55,10 +55,10 @@ trait AutoDoobie { self: Doobie =>
     def emptyProduct: Literal[HNil] = (_: HNil) => Vector.empty[Fragment]
 
     def product[H, T <: HList](ch: Literal[H], ct: Literal[T]): Literal[H :: T] = {
-      case h :: t => ch.fragment(h) ++ ct.fragment(t)
+      case h :: t => ch.fr(h) ++ ct.fr(t)
     }
 
     def project[F, G](bind: => Literal[G], to: F => G, from: G => F): Literal[F] =
-      (instance: F) => bind.fragment(to(instance))
+      (instance: F) => bind.fr(to(instance))
   }
 }

@@ -6,16 +6,16 @@ import shapeless._
 trait LiteralTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
 
   trait Literal[A] { l =>
-    def fragment(instance: A): Vector[Fr]
+    def fr(instance: A): Vector[Fr]
     def contramap[B](f: B => A): Literal[B] =
-      (instance: B) => l.fragment(f(instance))
+      (instance: B) => l.fr(f(instance))
   }
 
   def literalTypeClass: ProductTypeClass[Literal]
 
   trait LiteralLowerPriorityInstances {
     implicit def option[A: Literal]: Literal[Option[A]] = {
-      case Some(v) => Literal[A].fragment(v)
+      case Some(v) => Literal[A].fr(v)
       case None    => Vector(const("NULL"))
     }
   }
@@ -46,10 +46,10 @@ trait LiteralTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
 
   implicit class LiteralOps[A](a: A) {
     def literal(implicit ev: Literal[A]): LiteralNode[A] =
-      LiteralNode(ev.fragment(a))
+      LiteralNode(a, ev)
   }
 
   implicit def literalToConstant[A](implicit l: Literal[A]): Constant[A] =
-    Kleisli[LiteralExpression, A, A](a => LiteralNode[A](l.fragment(a)))
+    Kleisli[LiteralExpression, A, A](a => LiteralNode[A](a, l))
 
 }
