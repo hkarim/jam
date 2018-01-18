@@ -31,8 +31,8 @@ object Model {
 
   implicit val ns: NamingStrategy = NamingStrategy.Postgres // or MySQL
 
-  def findCountry[F[_]: Jam: Functor](
-      name: String)(implicit ws: Encode[String], ll: Constant[Long], r: Decode[F, Country]): F[Option[Country]] =
+  def findCountry[F[_]: Jam: Functor](name: String)
+                                     (implicit E: Encode[String], C: Constant[Long], D: Decode[F, Country]): F[Option[Country]] =
     DQL
       .from(c)
       .where(

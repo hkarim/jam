@@ -1,6 +1,7 @@
 package jam.sql
 
 import cats.Monoid
+import cats.data.Kleisli
 import cats.syntax.monoid._
 
 trait Backend[DBF[_], R[_], W[_]]
@@ -20,7 +21,7 @@ trait Backend[DBF[_], R[_], W[_]]
   def comma: Fr = const(",")
 
   implicit def read[A: Read](implicit ns: NamingStrategy): Decode[DBF, A] =
-    (n: DQLNode[A]) => query(n)
+    Kleisli[DBF, DQLNode[A], Vector[A]](query)
 
   implicit def backendEffect: Jam[DBF] = new Jam[DBF] {
     def query[A](n: DQLNode[A])(implicit r: Decode[DBF, A], ns: NamingStrategy): DBF[Vector[A]] = r(n)

@@ -1,5 +1,6 @@
 package jam.sql
 
+import cats.data.Kleisli
 import shapeless._
 
 trait LiteralTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
@@ -49,6 +50,6 @@ trait LiteralTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
   }
 
   implicit def literalToConstant[A](implicit l: Literal[A]): Constant[A] =
-    (a: A) => LiteralNode[A](l.fragment(a))
+    Kleisli[LiteralExpression, A, A](a => LiteralNode[A](l.fragment(a)))
 
 }

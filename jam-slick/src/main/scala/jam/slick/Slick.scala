@@ -1,6 +1,6 @@
 package jam.slick
 
-import cats.{Contravariant, Functor, Invariant, Monad, Monoid}
+import cats.{Contravariant, Functor, Monad, Monoid}
 import jam.sql._
 import shapeless._
 import _root_.slick.dbio.DBIO
@@ -17,10 +17,28 @@ trait Slick extends Backend[DBIO, GetResult, SetParameter] with AutoSlick with S
   def literalTypeClass: ProductTypeClass[Literal]     = LiteralTypeClass
   def fragment[A: SetParameter](value: A): Vector[Fr] = Vector(sql"$value")
 
-  implicit object readInvariant extends Invariant[Read] {
-    def imap[A, B](fa: Read[A])(f: A => B)(g: B => A): Read[B] = new Read[B] {
-      def read: GetResult[B] = GetResult[B](r => f(r.<<[A](fa.read)))
+  implicit object FragmentMonoid extends Monoid[Fr] {
+    def empty: Fragment                             = sql""
+    def combine(x: Fragment, y: Fragment): Fragment = concat(x, y)
+  }
+
+  implicit object GetResultFunctor extends Functor[GetResult] {
+    def map[A, B](fa: GetResult[A])(f: A => B): GetResult[B] = fa.andThen(f)
+  }
+
+  implicit object SetParameterContravariant extends Contravariant[SetParameter] {
+    def contramap[A, B](fa: SetParameter[A])(f: B => A): SetParameter[B] =
+      SetParameter((v, pp) => pp.>>(f(v))(fa))
+  }
+
+  implicit object ReadInvariantFunctor extends Functor[Read] {
+    def map[A, B](fa: Read[A])(f: A => B): Read[B] = new Read[B] {
+      implicit def read: GetResult[B] = GetResult[B](r => f(r.<<[A](fa.read)))
     }
+  }
+  implicit object WriteContravariant extends Contravariant[Write] {
+    def contramap[A, B](fa: Write[A])(f: B => A): Write[B] =
+      fa.contramap[B](f)(SetParameterContravariant)
   }
 
   implicit def dbioMonad[E](implicit ec: ExecutionContext): Monad[DBIO] =
@@ -37,20 +55,6 @@ trait Slick extends Backend[DBIO, GetResult, SetParameter] with AutoSlick with S
           case Right(b)    => DBIO.successful(b)
         }
     }
-
-  implicit object FragmentMonoid extends Monoid[Fr] {
-    def empty: Fragment                             = sql""
-    def combine(x: Fragment, y: Fragment): Fragment = concat(x, y)
-  }
-
-  implicit object GetResultFunctor extends Functor[GetResult] {
-    def map[A, B](fa: GetResult[A])(f: A => B): GetResult[B] = fa.andThen(f)
-  }
-
-  implicit object SetParameterContravariant extends Contravariant[SetParameter] {
-    def contramap[A, B](fa: SetParameter[A])(f: B => A): SetParameter[B] =
-      SetParameter((v, pp) => pp.>>(f(v))(fa))
-  }
 
   def const(value: String): Fr = sql"#$value"
 

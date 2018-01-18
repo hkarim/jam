@@ -82,27 +82,6 @@ object Infix extends InfixLowPriorityInstances {
     (operator: O, l: L[A], r: R[A]) => f(operator, l, r)
 }
 
-trait Encode[A] {
-  def apply(a: A): Expression[A]
-}
-object Encode {
-  def apply[A](implicit ev: Encode[A]): Encode[A] = ev
-}
-
-trait Constant[A] {
-  def apply(a: A): Expression[A]
-}
-object Constant {
-  def apply[A](implicit ev: Constant[A]): Constant[A] = ev
-}
-
-trait Decode[F[_], A] {
-  def apply(n: DQLNode[A]): F[Vector[A]]
-}
-object Decode {
-  def apply[F[_], A](implicit ev: Decode[F, A]): Decode[F, A] = ev
-}
-
 trait NamingStrategy {
   def name(p: Property[_]): String
   def name(e: Entity[_]): String

@@ -1,6 +1,7 @@
 package jam.sql
 
 import cats.Contravariant
+import cats.data.Kleisli
 import shapeless._
 
 trait WriteTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
@@ -50,6 +51,6 @@ trait WriteTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
   }
 
   implicit def writeToEncode[A](implicit w: Write[A]): Encode[A] =
-    (a: A) => BindNode[A](w.fr(a))
+    Kleisli[BindExpression, A, A](a => BindNode[A](w.fr(a)))
 
 }

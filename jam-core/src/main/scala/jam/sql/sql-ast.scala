@@ -49,6 +49,9 @@ case class SetCompositeNode[A](composite: Composite[A], value: Expression[A]) ex
   val settable: F[A] = composite
 }
 
+trait BindExpression[+A] extends Expression[A]
+trait LiteralExpression[+A] extends Expression[A]
+
 ////////////
 
 trait TAs[F[_], A] {
