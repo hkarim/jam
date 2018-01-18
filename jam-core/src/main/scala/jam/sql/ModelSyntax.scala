@@ -9,6 +9,10 @@ trait ModelSyntax {
 
   def property[P](name: String): Property[P] = Property.Strict[P](name)
 
+  implicit class EncloseExpressionOps[E[_] <: Expression[_], A](e: E[A]) {
+    def enclose: EncloseExpression[E, A] = EncloseExpression[E, A](e)
+  }
+
   implicit class ExpressionOps[A](l: Expression[A]) {
 
     def in(first: Expression[A], rest: Expression[A]*): Expression[Boolean] =
@@ -16,38 +20,36 @@ trait ModelSyntax {
     def notIn(first: Expression[A], rest: Expression[A]*): Expression[Boolean] =
       InNode(l, first +: rest, negate = true)
 
-    def +(r: Expression[A])(implicit ev: Infix[ArithmeticOperator.Plus.type, Expression, Expression, A, A]): Expression[A] =
-      ev(ArithmeticOperator.Plus, l, r)
-    def -(r: Expression[A])(implicit ev: Infix[ArithmeticOperator.Minus.type, Expression, Expression, A, A]): Expression[A] =
-      ev(ArithmeticOperator.Minus, l, r)
-    def *(r: Expression[A])(implicit ev: Infix[ArithmeticOperator.Multiply.type, Expression, Expression, A, A]): Expression[A] =
-      ev(ArithmeticOperator.Multiply, l, r)
-    def /(r: Expression[A])(implicit ev: Infix[ArithmeticOperator.Divide.type, Expression, Expression, A, A]): Expression[A] =
-      ev(ArithmeticOperator.Divide, l, r)
+    def +(r: Expression[A]): Expression[A] =
+      InfixNode[A, A, A](ArithmeticOperator.Plus, l, r)
+    def -(r: Expression[A]): Expression[A] =
+      InfixNode[A, A, A](ArithmeticOperator.Minus, l, r)
+    def *(r: Expression[A]): Expression[A] =
+      InfixNode[A, A, A](ArithmeticOperator.Multiply, l, r)
+    def /(r: Expression[A]): Expression[A] =
+      InfixNode[A, A, A](ArithmeticOperator.Divide, l, r)
 
-    def ===(r: Expression[A])(implicit ev: Infix[EqOperator.Eq.type, Expression, Expression, A, Boolean]): Expression[Boolean] =
-      ev(EqOperator.Eq, l, r)
-    def =!=(r: Expression[A])(implicit ev: Infix[EqOperator.Ne.type, Expression, Expression, A, Boolean]): Expression[Boolean] =
-      ev(EqOperator.Ne, l, r)
+    def ===(r: Expression[A]): Expression[Boolean] =
+      InfixNode[A, A, Boolean](EqOperator.Eq, l, r)
+    def =!=(r: Expression[A]): Expression[Boolean] =
+      InfixNode[A, A, Boolean](EqOperator.Ne, l, r)
 
-    def >(r: Expression[A])(implicit ev: Infix[PartialOrderOperator.Gt.type, Expression, Expression, A, Boolean]): Expression[Boolean] =
-      ev(PartialOrderOperator.Gt, l, r)
-    def >=(r: Expression[A])(implicit ev: Infix[PartialOrderOperator.Ge.type, Expression, Expression, A, Boolean]): Expression[Boolean] =
-      ev(PartialOrderOperator.Ge, l, r)
-    def <(r: Expression[A])(implicit ev: Infix[PartialOrderOperator.Lt.type, Expression, Expression, A, Boolean]): Expression[Boolean] =
-      ev(PartialOrderOperator.Lt, l, r)
-    def <=(r: Expression[A])(implicit ev: Infix[PartialOrderOperator.Le.type, Expression, Expression, A, Boolean]): Expression[Boolean] =
-      ev(PartialOrderOperator.Le, l, r)
+    def >(r: Expression[A]): Expression[Boolean] =
+      InfixNode[A, A, Boolean](PartialOrderOperator.Gt, l, r)
+    def >=(r: Expression[A]): Expression[Boolean] =
+      InfixNode[A, A, Boolean](PartialOrderOperator.Ge, l, r)
+    def <(r: Expression[A]): Expression[Boolean] =
+      InfixNode[A, A, Boolean](PartialOrderOperator.Lt, l, r)
+    def <=(r: Expression[A]): Expression[Boolean] =
+      InfixNode[A, A, Boolean](PartialOrderOperator.Le, l, r)
 
   }
 
   implicit class BooleanOps(l: Expression[Boolean]) {
-    def and(r: Expression[Boolean])(
-        implicit ev: Infix[LogicOperator.And.type, Expression, Expression, Boolean, Boolean]): Expression[Boolean] =
-      ev(LogicOperator.And, l, r)
-    def or(r: Expression[Boolean])(
-        implicit ev: Infix[LogicOperator.Or.type, Expression, Expression, Boolean, Boolean]): Expression[Boolean] =
-      ev(LogicOperator.Or, l, r)
+    def and(r: Expression[Boolean]): Expression[Boolean] =
+      InfixNode[Boolean, Boolean, Boolean](BinaryLogicOperator.And, l, r)
+    def or(r: Expression[Boolean]): Expression[Boolean] =
+      InfixNode[Boolean, Boolean, Boolean](BinaryLogicOperator.Or, l, r)
   }
   def not(e: Expression[Boolean]): Expression[Boolean] = NotNode(e)
 
@@ -137,6 +139,9 @@ trait ModelSyntax {
 
     def like(e: Expression[A]): Expression[Boolean]    = LikeNode(lhs, e, negate = false)
     def notLike(e: Expression[A]): Expression[Boolean] = LikeNode(lhs, e, negate = true)
+
+    def between(x: Expression[A], y: Expression[A]): Expression[Boolean]    = BetweenNode(lhs, x, y, negate = false)
+    def notBetween(x: Expression[A], y: Expression[A]): Expression[Boolean] = BetweenNode(lhs, x, y, negate = true)
 
     def asc: OrderLikeNode[A]  = AscNode(lhs)
     def desc: OrderLikeNode[A] = DescNode(lhs)

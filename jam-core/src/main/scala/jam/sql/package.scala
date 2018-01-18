@@ -6,10 +6,9 @@ import shapeless._
 
 package object sql {
 
-  type Encode[A] = Kleisli[BindExpression, A, A]
-  type Constant[A] = Kleisli[LiteralExpression, A, A]
-  type Decode[F[_], A]  = Kleisli[F, DQLNode[A], Vector[A]]
-
+  type Encode[A]       = Kleisli[BindExpression, A, A]
+  type Constant[A]     = Kleisli[LiteralExpression, A, A]
+  type Decode[F[_], A] = Kleisli[F, DQLNode[A], Vector[A]]
 
   object syntax extends ModelSyntax {
     implicit class WriteOps[A: Encode](value: A) {

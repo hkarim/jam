@@ -1,7 +1,7 @@
 # Jam
 
 Jam is an SQL builder with [doobie](https://github.com/tpolecat/doobie) and [slick](https://github.com/slick/slick) backends.
-This little library allows you use scala to build *partially typed* SQL expressions.
+This little library allows you use scala to build **partially typed** SQL expressions.
 
 The code is not currently published, and the library is still in very early stage so you'll have to build from the source for the time being.
 
@@ -11,41 +11,51 @@ To build queries we need to define some models first:
 
 ```scala
 
-object Model {
+import jam.sql._         // for entity and friends
+import jam.sql.syntax._  // for sql dsl
+import cats.Functor      // to map on query results
+import cats.implicits._  // for functor instance
 
-  import jam.sql._         // for entity
-  import jam.sql.syntax._  // for sql dsl
-  import cats.Functor      // to map on query results
-  import cats.implicits._  // for functor instance
+case class Country(code: String, name: String, population: Long)
 
-  case class Country(code: String, name: String, population: Long)
+object CountryEntity extends Entity[Country] {
+  val entityName: String         = "country"
 
-  object CountryEntity extends Entity[Country] {
-    val entityName: String = "country"
-    val code: Property[String] = property("code")
-    val name: Property[String] = property("name")
-    val population: Property[Long] = property("population")
-    val properties: Properties[Country] = (code :: name :: population :: HNil).properties[Country]
-  }
+  val code: Property[String]     = property("code")
+  val name: Property[String]     = property("name")
+  val population: Property[Long] = property("population")
 
-  val c: CountryEntity.type = CountryEntity
-
-  implicit val ns: NamingStrategy = NamingStrategy.Postgres // or MySQL
-
-  def findCountry[F[_]: Jam : Functor](name: String)(implicit w: Write[String], r: Read[F, Country]): F[Option[Country]] =
-    DQL
-      .from(c)
-      .where(c.name === name.param)
-      .select(c)
-      .query                        // type is auto inferred
-      .map(_.headOption)
+  val properties: Properties[Country] =
+    (code :: name :: population :: HNil).properties[Country]
 }
+
+val c: CountryEntity.type = CountryEntity
+
+implicit val ns: NamingStrategy = NamingStrategy.Postgres // or MySQL
+
+def min[A: Ordering](p: Property[A]): Expression[A] = FunctionNode[A, A]("min", p)
+
+def findCountry[F[_]: Jam: Functor]
+  (name: String)
+  (implicit E: Encode[String], C: Constant[Long], D: Decode[F, Country]): F[Option[Country]] =
+  DQL
+    .from(c)
+    .where(
+      (c.name.isNotNull and not(c.name notLike name.param)) and
+      (c.name like name.param) or
+      (c.population notBetween(100L.literal, 200L.literal)))
+    .groupBy(c.name, c.code)
+    .having(min(c.population) > 1000L.literal)
+    .orderBy(c.population.desc)
+    .select(c)
+    .query
+    .map(_.headOption)
 ```
 
 A few things to notice here:
 - In `CountryEntity`, `properties` shape must match the `Country` case class or we get an error at compile time
 - `findCountry` abstracts the doobie `ConnectionIO` and slick `DBIO` type constructors and requires an instance of `Functor` for them
-- `findCountry` also requires an evidence that a `String` parameter can be written as a JDBC parameter and that we can read the results of our query as `Country` using the `Read[F, Country]` evidence
+- `findCountry` also requires an `Encode` evidence that a `String` parameter can be written as a JDBC parameter and that we can read the results of our query as `Country` using the `Decode[F, Country]` evidence
 - At this point, the query will be built and can be run on both doobie and slick
 
 Here is an example running the query using doobie:

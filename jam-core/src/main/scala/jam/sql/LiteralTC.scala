@@ -5,10 +5,10 @@ import shapeless._
 
 trait LiteralTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
 
-  trait Literal[A] { l =>
+  trait Literal[A] { thisLiteral =>
     def fr(instance: A): Vector[Fr]
     def contramap[B](f: B => A): Literal[B] =
-      (instance: B) => l.fr(f(instance))
+      (instance: B) => thisLiteral.fr(f(instance))
   }
 
   def literalTypeClass: ProductTypeClass[Literal]

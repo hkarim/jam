@@ -11,7 +11,7 @@ import scala.util.{Failure, Success}
 
 object Model {
 
-  import jam.sql._        // for entity
+  import jam.sql._        // for entity and friends
   import jam.sql.syntax._ // for sql dsl
   import cats.Functor // to map on query results
   import cats.implicits._ // for functor instance
@@ -19,10 +19,12 @@ object Model {
   case class Country(code: String, name: String, population: Long)
 
   object CountryEntity extends Entity[Country] {
-    val entityName: String         = "country"
+    val entityName: String = "country"
+
     val code: Property[String]     = property("code")
     val name: Property[String]     = property("name")
     val population: Property[Long] = property("population")
+
     val properties: Properties[Country] =
       (code :: name :: population :: HNil).properties[Country]
   }
@@ -31,14 +33,18 @@ object Model {
 
   implicit val ns: NamingStrategy = NamingStrategy.Postgres // or MySQL
 
-  def findCountry[F[_]: Jam: Functor](name: String)
-                                     (implicit E: Encode[String], C: Constant[Long], D: Decode[F, Country]): F[Option[Country]] =
+  def min[A: Ordering](p: Property[A]): Expression[A] = FunctionNode[A, A]("min", p)
+
+  def findCountry[F[_]: Jam: Functor](
+      name: String)(implicit E: Encode[String], C: Constant[Long], D: Decode[F, Country]): F[Option[Country]] =
     DQL
       .from(c)
       .where(
-        c.name.isNotNull and
-          c.name === name.param and
-          (c.population - 100L.literal) > 200L.literal)
+        (c.name.isNotNull and not(c.name notLike name.param)) and
+          (c.name like name.param) or
+          (c.population notBetween (100L.literal, 200L.literal)))
+      .groupBy(c.name, c.code)
+      .having(min(c.population) > 1000L.literal)
       .orderBy(c.population.desc)
       .select(c)
       .query

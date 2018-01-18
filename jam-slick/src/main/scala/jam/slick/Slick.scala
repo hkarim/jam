@@ -1,6 +1,6 @@
 package jam.slick
 
-import cats.{Contravariant, Functor, Monad, Monoid}
+import cats.{Contravariant, Functor, MonadError, Monoid}
 import jam.sql._
 import shapeless._
 import _root_.slick.dbio.DBIO
@@ -40,9 +40,13 @@ trait Slick extends Backend[DBIO, GetResult, SetParameter] with AutoSlick with S
     def contramap[A, B](fa: Write[A])(f: B => A): Write[B] =
       fa.contramap[B](f)(SetParameterContravariant)
   }
+  implicit object LiteralContravariant extends Contravariant[Literal] {
+    def contramap[A, B](fa: Literal[A])(f: B => A): Literal[B] =
+      fa.contramap(f)
+  }
 
-  implicit def dbioMonad[E](implicit ec: ExecutionContext): Monad[DBIO] =
-    new Monad[DBIO] {
+  implicit def dbioMonadError(implicit ec: ExecutionContext): MonadError[DBIO, Throwable] =
+    new MonadError[DBIO, Throwable] {
 
       def pure[A](x: A): DBIO[A] = DBIO.successful(x)
 
@@ -54,12 +58,24 @@ trait Slick extends Backend[DBIO, GetResult, SetParameter] with AutoSlick with S
           case Left(other) => tailRecM(other)(f)
           case Right(b)    => DBIO.successful(b)
         }
+
+      def raiseError[A](e: Throwable): DBIO[A] = DBIO.failed(e)
+
+      def handleErrorWith[A](fa: DBIO[A])(f: Throwable => DBIO[A]): DBIO[A] = {
+        def translate(to: Option[Throwable]): DBIO[A] = to match {
+          case Some(t) => f(t)
+          case None    => fa
+        }
+        fa.cleanUp(translate, keepFailure = false)
+      }
+
     }
 
   def const(value: String): Fr = sql"#$value"
 
   def query[A: Read](n: Expression[A])(implicit ns: NamingStrategy): DBIO[Vector[A]] =
     run(n).as[A](Read[A].read)
+
   def update[A](n: DMLNode[A])(implicit ns: NamingStrategy): DBIO[Int] =
     run(n).asUpdate
 

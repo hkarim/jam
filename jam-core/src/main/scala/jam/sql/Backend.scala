@@ -111,12 +111,12 @@ trait Backend[DBF[_], R[_], W[_]]
     case PartialOrderOperator.Lt => const(" < ")
     case PartialOrderOperator.Le => const(" <= ")
 
-    case LogicOperator.And => const(" and ")
-    case LogicOperator.Or  => const(" or ")
+    case BinaryLogicOperator.And => const(" and ")
+    case BinaryLogicOperator.Or  => const(" or ")
 
-    case InfixNode(op @ LogicOperator.And, l, r) => run(l).enclose |+| run(op) |+| run(r).enclose
-    case InfixNode(op @ LogicOperator.Or, l, r)  => run(l).enclose |+| run(op) |+| run(r).enclose
-    case InfixNode(op, l, r)                     => run(l) |+| run(op) |+| run(r)
+    case InfixNode(op @ BinaryLogicOperator.And, l, r) => run(l).enclose |+| run(op) |+| run(r).enclose
+    case InfixNode(op @ BinaryLogicOperator.Or, l, r)  => run(l).enclose |+| run(op) |+| run(r).enclose
+    case InfixNode(op, l, r)                           => run(l) |+| run(op) |+| run(r)
 
     case NotNode(e) => const("not ") |+| run(e).enclose
 
@@ -138,6 +138,9 @@ trait Backend[DBF[_], R[_], W[_]]
 
     case LikeNode(l, r, not) =>
       run(l) |+| (if (not) const(" not like ") else const(" like ")) |+| run(r)
+
+    case BetweenNode(l, x, y, not) =>
+      run(l) |+| (if (not) const(" not between ") else const(" between ")) |+| run(x) |+| const(" and ") |+| run(y)
 
     case IsNullNode(v, not) =>
       run(v) |+| (if (not) const(" is not null") else const(" is null"))

@@ -6,13 +6,13 @@ import shapeless._
 
 trait WriteTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
 
-  trait Write[A] { b =>
+  trait Write[A] { thisWrite =>
     implicit def write: W[A]
     def fr(instance: A): Vector[Fr]
     def contramap[B](f: B => A)(implicit F: Contravariant[W]): Write[B] =
       new Write[B] {
-        implicit def write: W[B]        = F.contramap(b.write)(f)
-        def fr(instance: B): Vector[Fr] = self.fragment(f(instance))(b.write)
+        implicit def write: W[B]        = F.contramap(thisWrite.write)(f)
+        def fr(instance: B): Vector[Fr] = self.fragment(f(instance))(thisWrite.write)
       }
   }
   def writeTypeClass: ProductTypeClass[Write]

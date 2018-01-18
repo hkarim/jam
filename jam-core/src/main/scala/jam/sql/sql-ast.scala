@@ -5,7 +5,7 @@ import cats.data.NonEmptyList
 trait Node
 
 trait Expression[+A] extends Node { self =>
-  def enclose: Expression[A]          = EncloseExpression[A](this)
+
   def ~(alias: Symbol): Expression[A] = SubstitutedExpression(alias, self)
 }
 case class ExpressionList[H](expressions: Vector[Expression[_]]) extends Expression[H]
@@ -49,7 +49,7 @@ case class SetCompositeNode[A](composite: Composite[A], value: Expression[A]) ex
   val settable: F[A] = composite
 }
 
-trait BindExpression[+A] extends Expression[A]
+trait BindExpression[+A]    extends Expression[A]
 trait LiteralExpression[+A] extends Expression[A]
 
 ////////////
@@ -95,6 +95,8 @@ trait TGroupBy[F[_], A] {
 }
 object TGroupBy {
   implicit def orderingNode[O[_] <: OrderLikeNode[_], A]: TGroupBy[O, A] =
+    identity(_)
+  implicit def property[O[_] <: Property[_], A]: TGroupBy[O, A] =
     identity(_)
 }
 
@@ -251,7 +253,7 @@ trait DMLWhere extends Where
 case class EntityName(value: Entity[_])                                  extends Node
 case class PropertyName(value: Property[_])                              extends Node
 case class SubstitutedExpression[A](alias: Symbol, value: Expression[A]) extends Expression[A]
-case class EncloseExpression[A](value: Expression[A])                    extends Expression[A]
+case class EncloseExpression[E[_] <: Expression[_], A](value: E[A])      extends Expression[A]
 
 case class PropertyAliasNode[A](alias: Symbol, value: Property[A]) extends Expression[A]
 
@@ -374,17 +376,19 @@ object PartialOrderOperator {
   case object Le extends PartialOrderOperator
 }
 
-sealed trait LogicOperator extends BinaryOperator
-object LogicOperator {
-  case object And extends LogicOperator
-  case object Or  extends LogicOperator
+sealed trait BinaryLogicOperator extends BinaryOperator
+object BinaryLogicOperator {
+  case object And extends BinaryLogicOperator
+  case object Or  extends BinaryLogicOperator
 }
 
-case class InfixNode[A, T](operator: BinaryOperator, lhs: Expression[A], rhs: Expression[A]) extends Expression[T]
+case class InfixNode[L, R, T](operator: BinaryOperator, lhs: Expression[L], rhs: Expression[R]) extends Expression[T]
 
 case class InNode[A](lhs: Expression[A], rhs: TraversableOnce[Expression[A]], negate: Boolean) extends Expression[Boolean]
 
 case class LikeNode[A](lhs: Expression[A], rhs: Expression[A], negate: Boolean) extends Expression[Boolean]
+
+case class BetweenNode[A](lhs: Expression[A], x: Expression[A], y: Expression[A], negate: Boolean) extends Expression[Boolean]
 
 case class NotNode(e: Expression[Boolean]) extends Expression[Boolean]
 

@@ -12,7 +12,7 @@ package object slick {
   /*
   implicit def actionBasedSQLInterpolation(s: StringContext): ActionBasedSQLInterpolation =
     new ActionBasedSQLInterpolation(s)
-  */
+   */
 
   def concat(a: Fragment, b: Fragment): Fragment =
     SQLActionBuilder(a.queryParts ++ b.queryParts, (p: Unit, pp: PositionedParameters) => {

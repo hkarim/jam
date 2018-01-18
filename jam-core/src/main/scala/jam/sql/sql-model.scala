@@ -52,36 +52,6 @@ object Validator {
     }
 }
 
-trait Prefix[-O, -F[_], A, +T] {
-  def apply(operator: O, f: F[A]): Expression[T]
-}
-trait PrefixLowPriorityInstances {}
-object Prefix {
-  def apply[O, F[_], A, T](ev: Prefix[O, F, A, T]): Prefix[O, F, A, T] = ev
-}
-
-trait Infix[-O, -L[_], -R[_], A, +T] {
-  def apply(operator: O, l: L[A], r: R[A]): Expression[T]
-}
-trait InfixLowPriorityInstances {
-  implicit def arithmeticOperator[A: Numeric]: Infix[ArithmeticOperator, Expression, Expression, A, A] =
-    Infix.instance(InfixNode[A, A])
-
-  implicit def eqOperator[A]: Infix[EqOperator, Expression, Expression, A, Boolean] =
-    Infix.instance(InfixNode[A, Boolean])
-
-  implicit def partialOrderOperator[A]: Infix[PartialOrderOperator, Expression, Expression, A, Boolean] =
-    Infix.instance(InfixNode[A, Boolean])
-
-  implicit val logicOperator: Infix[LogicOperator, Expression, Expression, Boolean, Boolean] =
-    Infix.instance(InfixNode[Boolean, Boolean])
-}
-object Infix extends InfixLowPriorityInstances {
-  def apply[O, L[_], R[_], A, T](implicit ev: Infix[O, L, R, A, T]): Infix[O, L, R, A, T] = ev
-  def instance[O, L[_], R[_], A, T](f: (O, L[A], R[A]) => Expression[T]): Infix[O, L, R, A, T] =
-    (operator: O, l: L[A], r: R[A]) => f(operator, l, r)
-}
-
 trait NamingStrategy {
   def name(p: Property[_]): String
   def name(e: Entity[_]): String
