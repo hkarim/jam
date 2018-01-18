@@ -9,10 +9,10 @@ object Lib {
     val shapeless              = "2.3.3"
     val cats                   = "1.0.1"
     val circe                  = "0.9.0"
-    val postgres               ="9.1-901-1.jdbc4"
+    val postgres               = "42.1.4"
     val mysql                  = "6.0.6"
     val slick                  = "3.2.1"
-    val doobie                 = "0.5.0-M12"
+    val doobie                 = "0.5.0-M13"
     val akkaActor              = "2.5.8"
     val akkaStream             = "2.5.8"
     val akkaHttp               = "10.0.11"
@@ -51,7 +51,7 @@ object Lib {
   )
 
   val postgres = Seq(
-    "postgresql" % "postgresql" % Version.postgres
+    "org.postgresql" % "postgresql" % Version.postgres
   )
 
   val mysql = Seq(
@@ -65,6 +65,10 @@ object Lib {
 
   val doobie = Seq(
     "org.tpolecat" %% "doobie-core"      % Version.doobie
+  )
+
+  val doobieHikari = Seq(
+    "org.tpolecat" %% "doobie-hikari"      % Version.doobie
   )
 
   val jbcrypt = Seq(

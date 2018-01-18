@@ -91,5 +91,5 @@ lazy val `jam-example` = (project in file("jam-example"))
   .settings(
     commonSettings,
     libraryDependencies ++=
-      Lib.postgres)
+      Lib.postgres ++ Lib.doobieHikari)
 
