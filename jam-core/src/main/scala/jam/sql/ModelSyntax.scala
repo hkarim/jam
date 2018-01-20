@@ -53,21 +53,18 @@ trait ModelSyntax {
   }
   def not(e: Expression[Boolean]): Expression[Boolean] = NotNode(e)
 
-  implicit class PropertiesOps[In <: HList, Out <: HList, LOut <: HList, ZOut <: HList](out: Out) {
+
+  implicit class PropertiesSyntax[In <: HList, Out <: HList, LOut <: HList, ZOut <: HList](out: Out) {
     def properties[A](implicit g: Generic.Aux[A, In],
-                      v: Validator.Aux[In, Out],
+                      m: MappedAttribute.Aux[In, Out],
                       la: LiftAll.Aux[ToPropertyVector, Out, LOut],
                       z: Zip.Aux[LOut :: Out :: HNil, ZOut],
                       mf: MapFolder[ZOut, VP, ToPropertyVectorPloy.type]): Properties[A] =
       new Properties[A] {
-        type I = In
-        type O = Out
-        val generic: Generic.Aux[A, I]     = g
-        val validator: Validator.Aux[I, O] = v
-        val value: O                       = out
-        val vector: VP = la.instances
+        val vector: VP = (m, g, la)._3.instances
           .zip(out)
           .foldMap(Vector.empty[Property[_]])(ToPropertyVectorPloy)(_ ++ _)
+
       }
   }
 

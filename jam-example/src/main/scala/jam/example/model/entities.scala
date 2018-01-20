@@ -4,7 +4,7 @@ import java.time.Instant
 
 import jam.sql.{Composite, Entity, Properties, Property}
 import jam.sql.syntax._
-import shapeless.HNil
+import shapeless._
 
 class SignatureComposite(atName: String, byName: String) extends Composite[Signature] {
   val at: Property[Instant]  = property(atName)
@@ -63,7 +63,7 @@ object CountryEntity extends Entity[Country] {
   val population: Property[Population]        = property("population")
   val lifeExpectancy: Property[Float]         = property("lifeexpectancy")
   val properties: Properties[Country] =
-    (code :: name :: location.widen :: surfaceArea :: independenceYear :: population :: lifeExpectancy :: HNil)
+    (code :: name :: location.optional :: surfaceArea :: independenceYear :: population :: lifeExpectancy :: HNil)
       .properties[Country]
 }
 

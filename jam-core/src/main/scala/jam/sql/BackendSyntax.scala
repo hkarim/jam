@@ -18,7 +18,6 @@ trait BackendSyntax[DBF[_], R[_], W[_]] extends ModelSyntax { self: Backend[DBF,
   }
 
   protected[this] implicit class FrOps(l: Fr)(implicit M: Monoid[Fr]) {
-    //def ++(r: Fr): Fr = M.combine(l, r)
     def enclose: Fr = const("(") |+| l |+| const(")")
   }
   protected[this] implicit class FrTraversableOps(frs: TraversableOnce[Fr])(implicit M: Monoid[Fr]) {

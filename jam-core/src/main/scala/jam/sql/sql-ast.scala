@@ -26,6 +26,9 @@ case class PropertyList[H](properties: Vector[Property[_]]) extends Expression[H
 trait Composite[C] extends Attribute[C] with Expression[C] { self =>
   def widen: Composite[C] = this
   def properties: Properties[C]
+  def optional: Composite[Option[C]] = new Composite[Option[C]] {
+    def properties: Properties[Option[C]] = self.properties.optional
+  }
 }
 
 trait Entity[A] extends Composite[A] { self =>

@@ -2,19 +2,25 @@ package jam.sql
 
 import shapeless._
 
+import scala.annotation.implicitNotFound
+
 trait EntityPropertyList[H] {
   type E
   def entity: Entity[E]
   def propertyList: PropertyList[H]
 }
 
-trait Properties[A] {
-  type I <: HList
-  type O <: HList
-  def generic: Generic.Aux[A, I]
-  def validator: Validator.Aux[I, O]
-  def value: O
+trait Properties[A] { self =>
   def vector: Vector[Property[_]]
+  def optional: Properties[Option[A]] = new Properties[Option[A]] {
+    def vector: Vector[Property[_]] = self.vector
+  }
+}
+object Properties {
+  type Aux[A0, I0 <: HList, O0 <: HList] = Properties[A0] {
+    type I = I0
+    type O = O0
+  }
 }
 
 trait ToPropertyVector[A] {
@@ -35,22 +41,51 @@ object ToPropertyVectorPloy extends Poly1 {
     }
 }
 
-trait Validator[L <: HList] {
+@implicitNotFound(
+  """
+     Cannot validate that ${L} matches the requested shape, consider:
+     - If you are calling `properties` on an HList, make sure the shape of HList matches exactly the model
+     - If you are using composites, consider calling `widen` on composite instance
+   """)
+trait MappedAttribute[L <: HList] extends Serializable {
+  def capture: Any
   type Out <: HList
 }
-object Validator {
-  type Aux[I <: HList, O] = Validator[I] { type Out = O }
 
-  implicit def hnil: Aux[HNil, HNil] = new Validator[HNil] { type Out = HNil }
+object MappedAttribute {
+  def apply[L <: HList](implicit mapped: MappedAttribute[L]): Aux[L, mapped.Out] = mapped
 
-  implicit def hlistProperty[InH, InT <: HList, OutT <: HList]: Aux[InH :: InT, Property[InH] :: OutT] = new Validator[InH :: InT] {
-    type Out = Property[InH] :: OutT
+  @implicitNotFound(
+    """
+     Cannot validate the model type matches the shape ${Out0}
+     - If you are calling `properties` on an HList, make sure the shape of HList matches exactly the model
+     - If you are using composites, consider calling `widen` on composite instance
+     - Validate that the order of your properties matches exactly the model
+     - If you have an optional composite, calling `optional` on composite instance might help
+   """)
+  type Aux[L <: HList, Out0 <: HList] = MappedAttribute[L] { type Out = Out0 }
+
+  implicit def hnilMapped: Aux[HNil, HNil] = new MappedAttribute[HNil] {
+    type Out = HNil
+    def capture: Any = HNil
   }
-  implicit def hlistComposite[InH, C[_] <: Composite[_], InT <: HList, OutT <: HList]: Aux[InH :: InT, C[InH] :: OutT] =
-    new Validator[InH :: InT] {
-      type Out = C[InH] :: OutT
+
+  implicit def hlistMappedProperty[H, T <: HList, OutM <: HList]
+  (implicit mt : MappedAttribute.Aux[T, OutM]): Aux[H :: T, Property[H] :: OutM] =
+    new MappedAttribute[H :: T] {
+      type Out = Property[H] :: OutM
+      def capture: Any = mt
     }
+
+  implicit def hlistMappedComposite[H, T <: HList, OutM <: HList, C[_] <: Composite[_]]
+  (implicit mt : MappedAttribute.Aux[T, OutM]): Aux[H :: T, C[H] :: OutM] =
+    new MappedAttribute[H :: T] {
+      type Out = C[H] :: OutM
+      def capture: Any = mt
+    }
+
 }
+
 
 trait NamingStrategy {
   def name(p: Property[_]): String

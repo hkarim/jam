@@ -2,6 +2,7 @@ package jam.example.e004
 
 import jam.example.model._
 
+
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
@@ -28,6 +29,7 @@ object SlickOptionals {
 
     val c = CountryEntity
 
+    /*
     val country = Country(
       code = CountryCode("CDD"),
       name = Name("name"),
@@ -37,7 +39,9 @@ object SlickOptionals {
       population = Population(0L),
       lifeExpectancy = 0f
     )
+    */
 
+    /*
     val f =
       DML
         .insertInto(c)
@@ -45,8 +49,11 @@ object SlickOptionals {
         .update
         .transactionally
         .unsafeToFuture(db)
+    */
 
-    /*
+    //GetResult[Option[Location]]
+    Read[Option[Location]]
+
     val f =
       DQL
         .from(c)
@@ -54,7 +61,6 @@ object SlickOptionals {
         .select(c)
         .query
         .unsafeToFuture(db)
-    */
 
     f.onComplete {
       case Success(v) => println(v)

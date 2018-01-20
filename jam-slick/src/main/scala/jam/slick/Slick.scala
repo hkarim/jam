@@ -8,7 +8,11 @@ import _root_.slick.jdbc.{GetResult, SetParameter}
 
 import scala.concurrent.ExecutionContext
 
-trait Slick extends Backend[DBIO, GetResult, SetParameter] with AutoSlick with SlickSyntax { self =>
+trait Slick
+  extends Backend[DBIO, GetResult, SetParameter]
+    with AutoOptionalSlick
+    with AutoSlick
+    with SlickSyntax { self =>
 
   type Fr = Fragment
 
