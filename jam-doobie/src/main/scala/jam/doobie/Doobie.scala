@@ -13,10 +13,10 @@ trait Doobie extends Backend[ConnectionIO, Composite, Param] with AutoDoobie wit
   def literalTypeClass: ProductTypeClass[Literal] = LiteralTypeClass
 
   def query[A: Read](n: Expression[A])(implicit ns: NamingStrategy): ConnectionIO[Vector[A]] =
-    run(n).query[A](Read[A].read).to[Vector]
+    run(n).query[A](Read[A].read, LogHandler.jdkLogHandler).to[Vector]
 
   def update[A](n: DMLNode[A])(implicit ns: NamingStrategy): ConnectionIO[Int] =
-    run(n).update.run
+    run(n).update(LogHandler.jdkLogHandler).run
 
   def const(value: String): Fr = doobie.util.fragment.Fragment.const0(value)
 

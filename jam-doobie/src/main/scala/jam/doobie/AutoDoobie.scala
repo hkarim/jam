@@ -7,30 +7,14 @@ trait AutoDoobie { self: Doobie =>
 
   object WriteTypeClass extends ProductTypeClass[Write] {
 
-    def emptyProduct: Write[HNil] = new Write[HNil] {
-      implicit def write: doobie.Param[HNil] =
-        doobie.util.param.Param.ParamHNil
-      def fr(instance: HNil): Vector[Fragment] = Vector.empty[Fragment]
+    def emptyProduct: Write[HNil] = _ => Vector.empty[Fragment]
+
+    def product[H, T <: HList](ch: Write[H], ct: Write[T]): Write[H :: T] = {
+      case h :: t => ch.fr(h) ++ ct.fr(t)
     }
 
-    def product[H, T <: HList](ch: Write[H], ct: Write[T]): Write[H :: T] =
-      new Write[H :: T] {
-        implicit def write: doobie.Param[H :: T] =
-          doobie.util.param.Param.ParamHList(ch.write, ct.write)
-        def fr(instance: H :: T): Vector[Fragment] = instance match {
-          case h :: t => ch.fr(h) ++ ct.fr(t)
-        }
-      }
-
     def project[F, G](bind: => Write[G], to: F => G, from: G => F): Write[F] =
-      new Write[F] {
-        implicit def write: doobie.Param[F] = {
-          val c  = bind.write.composite
-          val cf = c.imap[F]((v: G) => from(v))((v: F) => to(v))
-          new doobie.util.param.Param(cf)
-        }
-        def fr(instance: F): Vector[Fragment] = bind.fr(to(instance))
-      }
+      instance => bind.fr(to(instance))
   }
 
   object ReadTypeClass extends ProductTypeClass[Read] {

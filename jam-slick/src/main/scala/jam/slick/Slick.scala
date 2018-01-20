@@ -38,7 +38,7 @@ trait Slick extends Backend[DBIO, GetResult, SetParameter] with AutoSlick with S
   }
   implicit object WriteContravariant extends Contravariant[Write] {
     def contramap[A, B](fa: Write[A])(f: B => A): Write[B] =
-      fa.contramap[B](f)(SetParameterContravariant)
+      fa.contramap[B](f)
   }
   implicit object LiteralContravariant extends Contravariant[Literal] {
     def contramap[A, B](fa: Literal[A])(f: B => A): Literal[B] =

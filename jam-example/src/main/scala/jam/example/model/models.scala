@@ -37,11 +37,10 @@ case class CityId(value: Long)        extends AnyVal
 case class CountryCode(value: String) extends AnyVal
 case class Population(value: Long)    extends AnyVal
 case class City(id: CityId, name: Name, countryCode: CountryCode, district: String, population: Population)
-
+case class Location(continent: String, region: Option[String])
 case class Country(code: CountryCode,
                    name: Name,
-                   continent: String,
-                   region: String,
+                   location: Option[Location],
                    surfaceArea: Double,
                    independenceYear: Option[Int],
                    population: Population,

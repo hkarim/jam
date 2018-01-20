@@ -49,17 +49,21 @@ object CityEntity extends Entity[City] {
 }
 
 object CountryEntity extends Entity[Country] {
-  val entityName: String                      = "country"
-  val code: Property[CountryCode]             = property("code")
-  val name: Property[Name]                    = property("name")
-  val continent: Property[String]             = property("continent")
-  val region: Property[String]                = property("region")
+  val entityName: String          = "country"
+  val code: Property[CountryCode] = property("code")
+  val name: Property[Name]        = property("name")
+  object location extends Composite[Location] {
+    val continent: Property[String] = property("continent")
+    val region: Property[Option[String]]    = property("region")
+
+    val properties: Properties[Location] = (continent :: region :: HNil).properties[Location]
+  }
   val surfaceArea: Property[Double]           = property("surfacearea")
   val independenceYear: Property[Option[Int]] = property("indepyear")
   val population: Property[Population]        = property("population")
   val lifeExpectancy: Property[Float]         = property("lifeexpectancy")
   val properties: Properties[Country] =
-    (code :: name :: continent :: region :: surfaceArea :: independenceYear :: population :: lifeExpectancy :: HNil)
+    (code :: name :: location.widen :: surfaceArea :: independenceYear :: population :: lifeExpectancy :: HNil)
       .properties[Country]
 }
 

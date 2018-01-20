@@ -16,6 +16,32 @@ trait AutoSlick { self: Slick =>
       instance andThen from
   }
 
+  type GetResultOption[A] = GetResult[Option[A]]
+  object GetResultOptionTypeClass extends ProductTypeClass[GetResultOption] {
+
+    def emptyProduct: GetResultOption[HNil] = GetResult[Option[HNil]](_ => Some(HNil))
+
+    def product[H, T <: HList](ch: GetResultOption[H], ct: GetResultOption[T]): GetResultOption[H :: T] =
+      GetResult[Option[H :: T]] { r =>
+        (r.<<?(ch), r.<<?(ct)) match {
+          case (Some(h), Some(t)) => Some(h :: t)
+          case _                  => None
+        }
+      }
+
+    def productWithHeadOption[H, T <: HList](ch: GetResultOption[H], ct: GetResultOption[T]): GetResultOption[Option[H] :: T] =
+      GetResult[Option[Option[H] :: T]] { r =>
+        (r.<<?(ch), r.<<?(ct)) match {
+          case (Some(h), Some(t)) => Some(Some(h) :: t)
+          case (None, Some(t))    => Some(None :: t)
+          case _                  => None
+        }
+      }
+
+    def project[F, G](instance: => GetResultOption[G], to: F => G, from: G => F): GetResultOption[F] =
+      instance.andThen(_.map(from))
+  }
+
   object SetParameterTypeClass extends ProductTypeClass[SetParameter] {
 
     def emptyProduct: SetParameter[HNil] = SetParameter[HNil]((_, _) => ())
@@ -38,26 +64,14 @@ trait AutoSlick { self: Slick =>
 
   object WriteTypeClass extends ProductTypeClass[Write] {
 
-    def emptyProduct: Write[HNil] = new Write[HNil] {
-      implicit def write: SetParameter[HNil]   = SetParameter[HNil]((_, _) => ())
-      def fr(instance: HNil): Vector[Fragment] = Vector.empty[Fragment]
+    def emptyProduct: Write[HNil] = _ => Vector.empty[Fragment]
+
+    def product[H, T <: HList](ch: Write[H], ct: Write[T]): Write[H :: T] = {
+      case h :: t => ch.fr(h) ++ ct.fr(t)
     }
 
-    def product[H, T <: HList](ch: Write[H], ct: Write[T]): Write[H :: T] =
-      new Write[H :: T] {
-        implicit def write: SetParameter[H :: T] =
-          SetParameterTypeClass.product[H, T](ch.write, ct.write)
-        def fr(instance: H :: T): Vector[Fragment] = instance match {
-          case h :: t => ch.fr(h) ++ ct.fr(t)
-        }
-      }
-
-    def project[F, G](bind: => Write[G], to: F => G, from: G => F): Write[F] =
-      new Write[F] {
-        implicit def write: SetParameter[F] =
-          SetParameterTypeClass.project(bind.write, to, from)
-        def fr(instance: F): Vector[Fragment] = bind.fr(to(instance))
-      }
+    def project[F, G](w: => Write[G], to: F => G, from: G => F): Write[F] =
+      instance => w.fr(to(instance))
   }
 
   object ReadTypeClass extends ProductTypeClass[Read] {
@@ -71,12 +85,39 @@ trait AutoSlick { self: Slick =>
           GetResultTypeClass.product[H, T](ch.read, ct.read)
       }
 
-    def project[F, G](unbind: => Read[G], to: F => G, from: G => F): Read[F] =
+    def project[F, G](r: => Read[G], to: F => G, from: G => F): Read[F] =
       new Read[F] {
         implicit def read: GetResult[F] =
-          GetResultTypeClass.project(unbind.read, to, from)
+          GetResultTypeClass.project(r.read, to, from)
       }
   }
+
+  type ReadOption[A] = Read[Option[A]]
+  object ReadOptionTypeClass extends ProductTypeClass[ReadOption] {
+    def emptyProduct: ReadOption[HNil] = new ReadOption[HNil] {
+      implicit def read: GetResult[Option[HNil]] =
+        GetResultOptionTypeClass.emptyProduct
+    }
+
+    def product[H, T <: HList](ch: ReadOption[H], ct: ReadOption[T]): ReadOption[H :: T] =
+      new Read[Option[H :: T]] {
+        implicit def read: GetResult[Option[H :: T]] =
+          GetResultOptionTypeClass.product(ch.read, ct.read)
+      }
+
+    def productWithHeadOption[H, T <: HList](ch: ReadOption[H], ct: ReadOption[T]): ReadOption[Option[H] :: T] =
+      new Read[Option[Option[H] :: T]] {
+        implicit def read: GetResult[Option[Option[H] :: T]] =
+          GetResultOptionTypeClass.productWithHeadOption(ch.read, ct.read)
+      }
+
+    def project[F, G](r: => ReadOption[G], to: F => G, from: G => F): ReadOption[F] =
+      new Read[Option[F]] {
+        implicit def read: GetResult[Option[F]] =
+          GetResultOptionTypeClass.project(r.read, to, from)
+      }
+  }
+
 
   object LiteralTypeClass extends ProductTypeClass[Literal] {
 
@@ -118,22 +159,42 @@ trait AutoSlick { self: Slick =>
     val typeClass: ProductTypeClass[SetParameter] = SetParameterTypeClass
   }
 
-  @inline implicit def deriveGRHNil: GetResult[HNil] =
-    GetResultCompanion.typeClass.emptyProduct
+
 
   @inline implicit def deriveSPHNil: SetParameter[HNil] =
     SetParameterCompanion.typeClass.emptyProduct
-
-  @inline implicit def deriveGRHCons[H, T <: HList](implicit ch: Lazy[GetResult[H]], ct: Lazy[GetResult[T]]): GetResult[H :: T] =
-    GetResultCompanion.typeClass.product(ch.value, ct.value)
-
   @inline implicit def deriveSPHCons[H, T <: HList](implicit ch: Lazy[SetParameter[H]], ct: Lazy[SetParameter[T]]): SetParameter[H :: T] =
     SetParameterCompanion.typeClass.product(ch.value, ct.value)
+  @inline implicit def deriveSPInstance[F, G](implicit gen: Generic.Aux[F, G], cg: Lazy[SetParameter[G]]): SetParameter[F] =
+    SetParameterCompanion.typeClass.project(cg.value, gen.to, gen.from)
 
+
+  @inline implicit def deriveGRHNil: GetResult[HNil] =
+    GetResultCompanion.typeClass.emptyProduct
+  @inline implicit def deriveGRHCons[H, T <: HList](implicit ch: Lazy[GetResult[H]], ct: Lazy[GetResult[T]]): GetResult[H :: T] =
+    GetResultCompanion.typeClass.product(ch.value, ct.value)
   @inline implicit def deriveGRInstance[F, G](implicit gen: Generic.Aux[F, G], cg: Lazy[GetResult[G]]): GetResult[F] =
     GetResultCompanion.typeClass.project(cg.value, gen.to, gen.from)
 
-  @inline implicit def deriveSPInstance[F, G](implicit gen: Generic.Aux[F, G], cg: Lazy[SetParameter[G]]): SetParameter[F] =
-    SetParameterCompanion.typeClass.project(cg.value, gen.to, gen.from)
+
+  @inline implicit def deriveGROHNil: GetResultOption[HNil] =
+    GetResultOptionTypeClass.emptyProduct
+  @inline implicit def deriveGROHCons1[H, T <: HList](implicit ch: Lazy[GetResultOption[H]], ct: Lazy[GetResultOption[T]]): GetResultOption[H :: T] =
+    GetResultOptionTypeClass.product(ch.value, ct.value)
+  @inline implicit def deriveGROHCons2[H, T <: HList](implicit ch: Lazy[GetResultOption[H]], ct: Lazy[GetResultOption[T]]): GetResultOption[Option[H] :: T] =
+    GetResultOptionTypeClass.productWithHeadOption(ch.value, ct.value)
+  @inline implicit def deriveGROInstance[F, G](implicit gen: Generic.Aux[F, G], cg: Lazy[GetResultOption[G]]): GetResultOption[F] =
+    GetResultOptionTypeClass.project(cg.value, gen.to, gen.from)
+
+
+  @inline implicit def deriveReadOptionHNil: ReadOption[HNil] =
+    ReadOptionTypeClass.emptyProduct
+  @inline implicit def deriveReadOptionHCons1[H, T <: HList](implicit ch: Lazy[ReadOption[H]], ct: Lazy[ReadOption[T]]): ReadOption[H :: T] =
+    ReadOptionTypeClass.product(ch.value, ct.value)
+  @inline implicit def deriveReadOptionHCons2[H, T <: HList](implicit ch: Lazy[ReadOption[H]], ct: Lazy[ReadOption[T]]): ReadOption[Option[H] :: T] =
+    ReadOptionTypeClass.productWithHeadOption(ch.value, ct.value)
+  @inline implicit def deriveReadOptionInstance[F, G](implicit gen: Generic.Aux[F, G], cg: Lazy[ReadOption[G]]): ReadOption[F] =
+    ReadOptionTypeClass.project(cg.value, gen.to, gen.from)
+
 
 }
