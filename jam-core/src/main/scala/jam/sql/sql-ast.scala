@@ -20,11 +20,19 @@ object Property {
   case class Strict[+P](name: String) extends Property[P] {
     def ? : Strict[Option[P]] = Strict[Option[P]](name)
   }
+  case class Aliased[+P](name: String, alias: String) extends Property[P] {
+    def ? : Aliased[Option[P]] = Aliased[Option[P]](name, alias)
+  }
 }
 case class PropertyList[H](properties: Vector[Property[_]]) extends Expression[H]
 
 trait Composite[C] extends Attribute[C] with Expression[C] { self =>
   def widen: Composite[C] = this
+
+  def property[P](name: String)(implicit na: Alias): Property[P] = na match {
+    case Alias.Empty        => Property.Strict[P](name)
+    case Alias.Value(alias) => Property.Aliased[P](name, alias)
+  }
   def properties: Properties[C]
   def optional: Composite[Option[C]] = new Composite[Option[C]] {
     def properties: Properties[Option[C]] = self.properties.optional
@@ -33,6 +41,19 @@ trait Composite[C] extends Attribute[C] with Expression[C] { self =>
 
 trait Entity[A] extends Composite[A] { self =>
   def entityName: String
+  implicit def entityAlias: Alias = Alias.Empty
+}
+
+sealed trait Alias
+object Alias {
+  case object Empty               extends Alias
+  case class Value(value: String) extends Alias
+}
+
+trait Aliased[A] { self: Entity[A] =>
+  def aliasName: String
+  def aliasedEntity: Entity[A]    = self
+  override def entityAlias: Alias = Alias.Value(aliasName)
 }
 
 sealed trait Settable extends Node {
@@ -73,6 +94,10 @@ trait TFrom[F[_], A] {
 object TFrom {
   implicit def entity[E[_] <: Entity[_], A]: TFrom[E, A] =
     (instance: E[A]) => EntityName(instance)
+
+  implicit def aliased[A]: TFrom[Aliased, A] =
+    (instance: Aliased[A]) => AsNode[Entity, A](Symbol(instance.aliasName), instance.aliasedEntity, TAs.entity[A])
+
   implicit def join[F[_] <: JoinLikeNode[_], A]: TFrom[F, A] = identity(_)
 
 }
@@ -84,6 +109,10 @@ object TJoin {
   implicit def entity[E[_] <: Entity[_], A]: TJoin[E, A] =
     (instance: E[A]) => EntityName(instance)
   implicit def as[F[_] <: AsLikeNode[_], A]: TJoin[F, A] = identity(_)
+
+  implicit def aliased[A]: TJoin[Aliased, A] =
+    (instance: Aliased[A]) => AsNode[Entity, A](Symbol(instance.aliasName), instance.aliasedEntity, TAs.entity[A])
+
 }
 
 trait TWhere[F[_], A] {

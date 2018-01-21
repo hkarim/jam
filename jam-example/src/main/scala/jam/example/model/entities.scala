@@ -2,18 +2,18 @@ package jam.example.model
 
 import java.time.Instant
 
-import jam.sql.{Composite, Entity, Properties, Property}
+import jam.sql._
 import jam.sql.syntax._
 import shapeless._
 
-class SignatureComposite(atName: String, byName: String) extends Composite[Signature] {
+class SignatureComposite(atName: String, byName: String)(implicit na: Alias) extends Composite[Signature] {
   val at: Property[Instant]  = property(atName)
   val by: Property[UserUUID] = property(byName)
   val properties: Properties[Signature] =
     (at :: by :: HNil).properties[Signature]
 }
 
-class TraceComposite extends Composite[Trace] {
+class TraceComposite(implicit na: Alias) extends Composite[Trace] {
   object created extends SignatureComposite("created_at", "created_by")
   object updated extends SignatureComposite("updated_at", "updated_by")
   val properties: Properties[Trace] =
@@ -53,8 +53,8 @@ object CountryEntity extends Entity[Country] {
   val code: Property[CountryCode] = property("code")
   val name: Property[Name]        = property("name")
   object location extends Composite[Location] {
-    val continent: Property[String] = property("continent")
-    val region: Property[Option[String]]    = property("region")
+    val continent: Property[String]      = property("continent")
+    val region: Property[Option[String]] = property("region")
 
     val properties: Properties[Location] = (continent :: region :: HNil).properties[Location]
   }

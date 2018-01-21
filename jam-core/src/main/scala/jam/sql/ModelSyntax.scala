@@ -7,8 +7,6 @@ trait ModelSyntax {
 
   type VP = Vector[Property[_]]
 
-  def property[P](name: String): Property[P] = Property.Strict[P](name)
-
   implicit class EncloseExpressionOps[E[_] <: Expression[_], A](e: E[A]) {
     def enclose: EncloseExpression[E, A] = EncloseExpression[E, A](e)
   }
@@ -53,7 +51,6 @@ trait ModelSyntax {
   }
   def not(e: Expression[Boolean]): Expression[Boolean] = NotNode(e)
 
-
   implicit class PropertiesSyntax[In <: HList, Out <: HList, LOut <: HList, ZOut <: HList](out: Out) {
     def properties[A](implicit g: Generic.Aux[A, In],
                       m: MappedAttribute.Aux[In, Out],
@@ -95,6 +92,19 @@ trait ModelSyntax {
   }
 
   //implicit class EntityIsJoin[A](e: Entity[A]) extends Expression[A] with HasJoin
+  implicit class AliasedSyntax[E](aliased: Aliased[E]) extends Node with HasJoin {
+    override def innerJoin[F[_], A](a: F[A])(implicit ev: TJoin[F, A]): JoinNode[F, A] =
+      JoinNode(AsNode[Entity, E](Symbol(aliased.aliasName), aliased.aliasedEntity, TAs.entity[E]), JoinType.InnerJoin, a, ev)
+
+    override def leftOuterJoin[F[_], A](a: F[A])(implicit ev: TJoin[F, A]): JoinNode[F, A] =
+      JoinNode(AsNode[Entity, E](Symbol(aliased.aliasName), aliased.aliasedEntity, TAs.entity[E]), JoinType.LeftOuterJoin, a, ev)
+
+    override def rightOuterJoin[F[_], A](a: F[A])(implicit ev: TJoin[F, A]): JoinNode[F, A] =
+      JoinNode(AsNode[Entity, E](Symbol(aliased.aliasName), aliased.aliasedEntity, TAs.entity[E]), JoinType.RightOuterJoin, a, ev)
+
+    override def crossJoin[F[_], A](a: F[A])(implicit ev: TJoin[F, A]): JoinNode[F, A] =
+      JoinNode(AsNode[Entity, E](Symbol(aliased.aliasName), aliased.aliasedEntity, TAs.entity[E]), JoinType.CrossJoin, a, ev)
+  }
 
   implicit class EntityOps[A](self: Entity[A]) {
     def of[P](p: Property[P]): EntityPropertyList[P] =

@@ -41,12 +41,6 @@ object ToPropertyVectorPloy extends Poly1 {
     }
 }
 
-@implicitNotFound(
-  """
-     Cannot validate that ${L} matches the requested shape, consider:
-     - If you are calling `properties` on an HList, make sure the shape of HList matches exactly the model
-     - If you are using composites, consider calling `widen` on composite instance
-   """)
 trait MappedAttribute[L <: HList] extends Serializable {
   def capture: Any
   type Out <: HList
@@ -55,9 +49,11 @@ trait MappedAttribute[L <: HList] extends Serializable {
 object MappedAttribute {
   def apply[L <: HList](implicit mapped: MappedAttribute[L]): Aux[L, mapped.Out] = mapped
 
-  @implicitNotFound(
-    """
-     Cannot validate the model type matches the shape ${Out0}
+  @implicitNotFound("""
+     Cannot validate that the input model type matches the shape ${Out0}
+     For any input model `case class M(a1: A1, ..., an: An)`,
+     the required shaped must be on the form `F[A1] :: ... :: F[An] :: HNil`
+     where `F` is either `Property` or `Composite`
      - If you are calling `properties` on an HList, make sure the shape of HList matches exactly the model
      - If you are using composites, consider calling `widen` on composite instance
      - Validate that the order of your properties matches exactly the model
@@ -70,15 +66,15 @@ object MappedAttribute {
     def capture: Any = HNil
   }
 
-  implicit def hlistMappedProperty[H, T <: HList, OutM <: HList]
-  (implicit mt : MappedAttribute.Aux[T, OutM]): Aux[H :: T, Property[H] :: OutM] =
+  implicit def hlistMappedProperty[H, T <: HList, OutM <: HList](
+      implicit mt: MappedAttribute.Aux[T, OutM]): Aux[H :: T, Property[H] :: OutM] =
     new MappedAttribute[H :: T] {
       type Out = Property[H] :: OutM
       def capture: Any = mt
     }
 
-  implicit def hlistMappedComposite[H, T <: HList, OutM <: HList, C[_] <: Composite[_]]
-  (implicit mt : MappedAttribute.Aux[T, OutM]): Aux[H :: T, C[H] :: OutM] =
+  implicit def hlistMappedComposite[H, T <: HList, OutM <: HList, C[_] <: Composite[_]](
+      implicit mt: MappedAttribute.Aux[T, OutM]): Aux[H :: T, C[H] :: OutM] =
     new MappedAttribute[H :: T] {
       type Out = C[H] :: OutM
       def capture: Any = mt
@@ -86,18 +82,25 @@ object MappedAttribute {
 
 }
 
-
 trait NamingStrategy {
   def name(p: Property[_]): String
   def name(e: Entity[_]): String
 }
 object NamingStrategy {
   object MySQL extends NamingStrategy {
-    def name(e: Entity[_]): String   = s"`${e.entityName}`"
-    def name(p: Property[_]): String = s"`${p.name}`"
+    def name(e: Entity[_]): String = s"`${e.entityName}`"
+    def name(p: Property[_]): String = p match {
+      case Property.Strict(n)     => s"`$n`"
+      case Property.Aliased(n, a) => s"$a.`$n`"
+    }
+
   }
   object Postgres extends NamingStrategy {
-    def name(e: Entity[_]): String   = s""""${e.entityName}""""
-    def name(p: Property[_]): String = s""""${p.name}""""
+    def name(e: Entity[_]): String = s""""${e.entityName}""""
+    def name(p: Property[_]): String = p match {
+      case Property.Strict(n)     => s""""$n""""
+      case Property.Aliased(n, a) => s"""$a."$n""""
+    }
+
   }
 }

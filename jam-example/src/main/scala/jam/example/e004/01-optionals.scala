@@ -2,7 +2,6 @@ package jam.example.e004
 
 import jam.example.model._
 
-
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
@@ -39,7 +38,7 @@ object SlickOptionals {
       population = Population(0L),
       lifeExpectancy = 0f
     )
-    */
+     */
 
     /*
     val f =
@@ -49,7 +48,7 @@ object SlickOptionals {
         .update
         .transactionally
         .unsafeToFuture(db)
-    */
+     */
 
     //GetResult[Option[Location]]
     Read[Option[Location]]
@@ -75,7 +74,6 @@ object SlickOptionals {
 
 }
 
-
 object DoobieOptionals {
 
   import cats.effect.IO
@@ -84,8 +82,6 @@ object DoobieOptionals {
   import jam.doobie.implicits._
   import jam.sql._
   import scala.concurrent.ExecutionContext.Implicits.global
-
-
 
   val xa: Transactor.Aux[IO, Unit] = Transactor.fromDriverManager[IO](
     "org.postgresql.Driver",
@@ -112,7 +108,7 @@ object DoobieOptionals {
       population = Population(0L),
       lifeExpectancy = 0f
     )
-    */
+     */
 
     val f =
       DQL
@@ -131,7 +127,7 @@ object DoobieOptionals {
         .update
         .transact(xa)
         .unsafeToFuture()
-    */
+     */
 
     f.onComplete {
       case Success(v) => println(v)

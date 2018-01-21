@@ -118,7 +118,6 @@ trait AutoSlick { self: Slick =>
       }
   }
 
-
   object LiteralTypeClass extends ProductTypeClass[Literal] {
 
     def emptyProduct: Literal[HNil] = (_: HNil) => Vector.empty[Fragment]
@@ -159,8 +158,6 @@ trait AutoSlick { self: Slick =>
     val typeClass: ProductTypeClass[SetParameter] = SetParameterTypeClass
   }
 
-
-
   @inline implicit def deriveSPHNil: SetParameter[HNil] =
     SetParameterCompanion.typeClass.emptyProduct
   @inline implicit def deriveSPHCons[H, T <: HList](implicit ch: Lazy[SetParameter[H]], ct: Lazy[SetParameter[T]]): SetParameter[H :: T] =
@@ -168,16 +165,11 @@ trait AutoSlick { self: Slick =>
   @inline implicit def deriveSPInstance[F, G](implicit gen: Generic.Aux[F, G], cg: Lazy[SetParameter[G]]): SetParameter[F] =
     SetParameterCompanion.typeClass.project(cg.value, gen.to, gen.from)
 
-
   @inline implicit def deriveGRHNil: GetResult[HNil] =
     GetResultCompanion.typeClass.emptyProduct
   @inline implicit def deriveGRHCons[H, T <: HList](implicit ch: Lazy[GetResult[H]], ct: Lazy[GetResult[T]]): GetResult[H :: T] =
     GetResultCompanion.typeClass.product(ch.value, ct.value)
   @inline implicit def deriveGRInstance[F, G](implicit gen: Generic.Aux[F, G], cg: Lazy[GetResult[G]]): GetResult[F] =
     GetResultCompanion.typeClass.project(cg.value, gen.to, gen.from)
-
-
-
-
 
 }

@@ -27,21 +27,20 @@ trait WriteTC[DBF[_], R[_], W[_]] { self: Backend[DBF, R, W] =>
 
     @inline implicit def deriveWriteOptionHNil: WriteOption[HNil] = _ => Vector.empty[Fr]
 
-    @inline implicit def deriveWriteOptionHCons1[H, T <: HList]
-      (implicit ch: Lazy[WriteOption[H]], ct: Lazy[WriteOption[T]]): WriteOption[H :: T] = {
+    @inline implicit def deriveWriteOptionHCons1[H, T <: HList](implicit ch: Lazy[WriteOption[H]],
+                                                                ct: Lazy[WriteOption[T]]): WriteOption[H :: T] = {
       case Some(h :: t) => ch.value.fr(Some(h)) ++ ct.value.fr(Some(t))
       case None         => ch.value.fr(None) ++ ct.value.fr(None)
     }
 
-    @inline implicit def deriveWriteOptionHCons2[H, T <: HList]
-      (implicit ch: Lazy[WriteOption[H]], ct: Lazy[WriteOption[T]]): WriteOption[Option[H] :: T] = {
+    @inline implicit def deriveWriteOptionHCons2[H, T <: HList](implicit ch: Lazy[WriteOption[H]],
+                                                                ct: Lazy[WriteOption[T]]): WriteOption[Option[H] :: T] = {
       case Some(Some(h) :: t) => ch.value.fr(Some(h)) ++ ct.value.fr(Some(t))
-      case Some(None    :: t) => ch.value.fr(None) ++ ct.value.fr(Some(t))
+      case Some(None :: t)    => ch.value.fr(None) ++ ct.value.fr(Some(t))
       case None               => ch.value.fr(None) ++ ct.value.fr(None)
     }
 
-    @inline implicit def deriveWriteOptionInstance[F, G]
-      (implicit g: Generic.Aux[F, G], cg: Lazy[WriteOption[G]]): WriteOption[F] = {
+    @inline implicit def deriveWriteOptionInstance[F, G](implicit g: Generic.Aux[F, G], cg: Lazy[WriteOption[G]]): WriteOption[F] = {
       case Some(f) => cg.value.fr(Some(g.to(f)))
       case None    => cg.value.fr(None)
     }
