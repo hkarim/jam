@@ -48,7 +48,7 @@ object CityEntity extends Entity[City] {
       .properties[City]
 }
 
-object CountryEntity extends Entity[Country] {
+class CountryEntity extends Entity[Country] {
   val entityName: String          = "country"
   val code: Property[CountryCode] = property("code")
   val name: Property[Name]        = property("name")
@@ -66,6 +66,7 @@ object CountryEntity extends Entity[Country] {
     (code :: name :: location.optional :: surfaceArea :: independenceYear :: population :: lifeExpectancy :: HNil)
       .properties[Country]
 }
+object CountryEntity extends CountryEntity
 
 object CountryLanguageEntity extends Entity[CountryLanguage] {
   val entityName: String                 = "countrylanguage"

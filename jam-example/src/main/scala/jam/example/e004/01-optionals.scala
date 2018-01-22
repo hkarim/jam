@@ -26,21 +26,17 @@ object SlickOptionals {
 
   def main(args: Array[String]): Unit = {
 
-    val c = CountryEntity
-
     /*
     val country = Country(
       code = CountryCode("CDD"),
       name = Name("name"),
-      location = None,
+      location = Some(Location("continent", None)),
       surfaceArea = 0d,
       independenceYear = Some(0),
       population = Population(0L),
       lifeExpectancy = 0f
     )
-     */
 
-    /*
     val f =
       DML
         .insertInto(c)
@@ -48,7 +44,7 @@ object SlickOptionals {
         .update
         .transactionally
         .unsafeToFuture(db)
-     */
+    */
 
     //GetResult[Option[Location]]
     //Read[Option[Location]]
@@ -57,13 +53,14 @@ object SlickOptionals {
       DQL
         .from(c)
         .limit(1L.literal)
-        .select(c.location.?)
+        .select(c.name :: c.location.? :: c.lifeExpectancy.?)
         .query
+        .transactionally
         .unsafeToFuture(db)
 
     f.onComplete {
       case Success(v) => println(v)
-      case Failure(e) => e.printStackTrace()
+      case Failure(t) => t.printStackTrace()
     }
 
     Await.result(f, Duration.Inf)
@@ -113,8 +110,8 @@ object DoobieOptionals {
     val f =
       DQL
         .from(c)
-        .limit(10L.literal)
-        .select(c)
+        .limit(1L.literal)
+        .select(c.name :: c.location.? :: c.lifeExpectancy.?)
         .query
         .transact(xa)
         .unsafeToFuture()
