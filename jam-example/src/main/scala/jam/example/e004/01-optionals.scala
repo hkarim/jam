@@ -51,13 +51,13 @@ object SlickOptionals {
      */
 
     //GetResult[Option[Location]]
-    Read[Option[Location]]
+    //Read[Option[Location]]
 
     val f =
       DQL
         .from(c)
-        .limit(10L.literal)
-        .select(c)
+        .limit(1L.literal)
+        .select(c.location.?)
         .query
         .unsafeToFuture(db)
 

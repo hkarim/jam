@@ -34,6 +34,7 @@ trait AutoSlick { self: Slick =>
         (r.<<?(ch), r.<<?(ct)) match {
           case (Some(h), Some(t)) => Some(Some(h) :: t)
           case (None, Some(t))    => Some(None :: t)
+          case (Some(h), None)    => Some(Some(h) :: HNil.asInstanceOf[T])
           case _                  => None
         }
       }

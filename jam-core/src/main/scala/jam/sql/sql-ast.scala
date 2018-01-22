@@ -14,14 +14,15 @@ sealed trait Attribute[+A]
 
 sealed trait Property[+P] extends Attribute[P] with Expression[P] { self =>
   def name: String
-  def ? : Property[Option[P]]
+  def optional: Property[Option[P]]
+  def ? : Property[Option[P]] = optional
 }
 object Property {
   case class Strict[+P](name: String) extends Property[P] {
-    def ? : Strict[Option[P]] = Strict[Option[P]](name)
+    def optional : Strict[Option[P]] = Strict[Option[P]](name)
   }
   case class Aliased[+P](name: String, alias: String) extends Property[P] {
-    def ? : Aliased[Option[P]] = Aliased[Option[P]](name, alias)
+    def optional : Aliased[Option[P]] = Aliased[Option[P]](name, alias)
   }
 }
 case class PropertyList[H](properties: Vector[Property[_]]) extends Expression[H]
@@ -37,6 +38,8 @@ trait Composite[C] extends Attribute[C] with Expression[C] { self =>
   def optional: Composite[Option[C]] = new Composite[Option[C]] {
     def properties: Properties[Option[C]] = self.properties.optional
   }
+
+  def ? : Composite[Option[C]] = optional
 }
 
 trait Entity[A] extends Composite[A] { self =>
