@@ -26,7 +26,7 @@ class SlickCompanyService(implicit val ns: NamingStrategy) extends CompanyServic
     DML.insertInto(e).values(instance.param).update
 
   def update(uuid: CompanyUUID, data: CompanyData): DBIO[Int] =
-    DML.update(e).set(e.data := data.param).where(e.uuid === uuid.param).update
+    DML.update(e).set(e.data := data.param)(e.uuid === uuid.param).update
 
   DQL
     .from(

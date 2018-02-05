@@ -32,8 +32,7 @@ object SlickExample {
 
     DML
       .update(country)
-      .set(country.name := Name("").param, country.code := CountryCode("").param)
-      .where(country.name === Name("").param)
+      .set(country.name := Name("").param, country.code := CountryCode("").param)(country.name === Name("").param)
 
     val query =
       DQL

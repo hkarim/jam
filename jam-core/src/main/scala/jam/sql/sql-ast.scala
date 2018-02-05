@@ -267,7 +267,10 @@ trait HasUpdate { self: Node =>
 }
 
 trait HasDeleteFrom { self: Node =>
-  def deleteFrom[F[_], A](fa: F[A])(implicit ev: TFrom[F, A]): DeleteFromNode[F, A] =
+  def deleteFrom[F[_], A](fa: F[A])(exp: Expression[Boolean])(implicit ev: TFrom[F, A]): DMLWhereNode[Expression, Boolean] =
+    DeleteFromNode(self, fa, ev).where(exp)
+
+  def deleteAllFrom[F[_], A](fa: F[A])(implicit ev: TFrom[F, A]): DeleteFromNode[F, A] =
     DeleteFromNode(self, fa, ev)
 }
 
@@ -380,7 +383,10 @@ case class ValuesNode[F[_], A](parent: Node, value: TraversableOnce[F[A]], tv: T
 case class InsertIntoSelect[A](parent: Node, value: DQLNode[A])                               extends DMLNode[A]
 
 case class UpdateNode[F[_], A](parent: Node, value: F[A], tu: TUpdate[F, A]) extends Node {
-  def set[T](x: T, xs: T*)(implicit ev: TSet[T]): SetNode[T] =
+  def set[T](x: T, xs: T*)(exp: Expression[Boolean])(implicit ev: TSet[T]): DMLWhereNode[Expression, Boolean] =
+    SetNode(this, x +: xs, ev).where(exp)
+
+  def setAllTable[T](x: T, xs: T*)(implicit ev: TSet[T]): SetNode[T] =
     SetNode(this, x +: xs, ev)
 }
 case class SetNode[A](parent: Node, value: TraversableOnce[A], ts: TSet[A]) extends DMLNode[A] with HasDMLWhere

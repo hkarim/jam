@@ -134,26 +134,23 @@ object Main {
 
     DML
       .update(c)
-      .set(c.name := "some name".param, c.code := "some-code".param)
+      .setAllTable(c.name := "some name".param, c.code := "some-code".param)
 
     DML
       .update(c)
-      .set(c.name := DQL.select("some name".literal).enclose, c.population := c.population - 1L.literal)
-      .where((c.code :: c.name) in ("a".literal :: "b".param))
+      .set(c.name := DQL.select("some name".literal).enclose, c.population := c.population - 1L.literal)((c.code :: c.name) in ("a".literal :: "b".param))
       .update
       .transactionally
       .unsafeToFuture(db)
 
     DML
-      .deleteFrom(c)
-      .where(c.population <= 0L.param)
+      .deleteFrom(c)(c.population <= 0L.param)
       .update
       .transactionally
       .unsafeToFuture(db)
 
     DML
-      .deleteFrom(c)
-      .where(c.population in DQL.select(1L.literal))
+      .deleteFrom(c)(c.population in DQL.select(1L.literal))
       .update
       .transactionally
       .unsafeToFuture(db)
